@@ -11,6 +11,7 @@ import {
   formatQuantityDisplay,
 } from '../lib/monthlyOrderSummary'
 import { useInvoicesStore } from '../store/useInvoicesStore'
+import { formatDateTimeDotDMY } from '../lib/dateDisplay'
 import { useSubmissionsStore } from '../store/useSubmissionsStore'
 
 const PRINT_TYPE_OPTIONS = ['All', 'Embroidery', 'Sublimation', 'Screen Print', 'Sticker']
@@ -211,7 +212,7 @@ export function DashboardPage() {
                       Job: {s.data.jobNo} - {s.data.ownerName}
                     </p>
                     <p className="mt-1 truncate text-xs text-slate-400">
-                      {s.data.printType || 'No type'} - {new Date(s.createdAt).toLocaleString()}
+                      {s.data.printType || 'No type'} — {formatDateTimeDotDMY(s.createdAt)}
                     </p>
                   </Link>
                   <div className="flex shrink-0 flex-wrap gap-2">

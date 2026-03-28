@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
+import { formatDateDotDMY, formatDateTimeDotDMY } from '../lib/dateDisplay'
 import { firebaseDb } from '../lib/firebase'
 import { useInvoicesStore } from '../store/useInvoicesStore'
 import { useSubmissionsStore } from '../store/useSubmissionsStore'
@@ -154,7 +155,7 @@ export function InvoicesListPage() {
           {filtered.map((inv) => {
             const lines = cardLines(inv, submissionById)
             const linkedOrder = inv.submissionId ? submissionById.get(inv.submissionId) : undefined
-            const dateLabel = inv.data.invoiceDate?.trim() || inv.createdAt.slice(0, 10)
+            const dateLabel = formatDateDotDMY(inv.data.invoiceDate?.trim() || inv.createdAt.slice(0, 10))
             return (
               <li key={inv.id}>
                 <Card padding="sm" className="transition hover:border-slate-300">
@@ -163,7 +164,7 @@ export function InvoicesListPage() {
                       <p className="font-medium text-slate-900 group-hover:text-blue-600">{lines.title}</p>
                       <p className="mt-1 truncate text-sm text-slate-500">{lines.subtitle}</p>
                       <p className="mt-1 truncate text-xs text-slate-400">
-                        {lines.metaType} · Invoice {dateLabel} — updated {new Date(inv.updatedAt).toLocaleString()}
+                        {lines.metaType} · Invoice {dateLabel} — updated {formatDateTimeDotDMY(inv.updatedAt)}
                       </p>
                     </Link>
                     <div className="flex shrink-0 flex-wrap gap-2">

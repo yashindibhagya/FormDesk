@@ -1,6 +1,7 @@
 import { toCanvas } from 'html-to-image'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
+import { formatDateDotDMY, formatDateTimeDotDMY } from './dateDisplay'
 import type { Submission } from '../types/survey'
 
 /**
@@ -225,11 +226,11 @@ export function submissionToPlainText(sub: Submission): string {
   const lines = [
     'FormFlow - Order Details',
     `Submission ID: ${sub.id}`,
-    `Created: ${new Date(sub.createdAt).toLocaleString()}`,
+    `Created: ${formatDateTimeDotDMY(sub.createdAt)}`,
     '',
     '--- Order Identity ---',
-    `Order Date: ${data.orderDate}`,
-    `Delivered By: ${data.deliveredBy}`,
+    `Order Date: ${formatDateDotDMY(data.orderDate) || '-'}`,
+    `Delivered By: ${formatDateDotDMY(data.deliveredBy) || data.deliveredBy || '-'}`,
     `Job No: ${data.jobNo}`,
     `Order Name: ${data.orderName}`,
     `Owner Name: ${data.ownerName}`,

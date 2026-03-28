@@ -1,3 +1,4 @@
+import { formatDateDotDMY } from '../../lib/dateDisplay'
 import type { QuotationLineItem } from '../../types/quotation'
 import { formatLineAmount, sumLineAmounts } from '../../types/quotation'
 
@@ -46,7 +47,7 @@ export function QuotationTemplate({
       <div className="relative z-[1] px-10 pb-12 pt-36 text-[13px] leading-relaxed print:px-12 sm:pt-40">
         <div className="mb-6 grid gap-1 text-[13px]">
           <p>
-            <span className="font-semibold">Date:</span> {quotationDate || '—'}
+            <span className="font-semibold">Date:</span> {formatDateDotDMY(quotationDate) || '—'}
           </p>
           {customerAddress.trim() ? (
             <div className="whitespace-pre-wrap">

@@ -5,6 +5,7 @@ import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { firebaseDb } from '../lib/firebase'
+import { formatDateTimeDotDMY } from '../lib/dateDisplay'
 import { useSubmissionsStore } from '../store/useSubmissionsStore'
 
 const PRINT_TYPE_OPTIONS = ['All', 'Embroidery', 'Sublimation', 'Screen Print', 'Sticker']
@@ -118,7 +119,7 @@ export function QuotationsListPage() {
                       Job: {s.data.jobNo} - {s.data.ownerName}
                     </p>
                     <p className="mt-1 truncate text-xs text-slate-400">
-                      {s.data.printType || 'No type'} - {new Date(s.createdAt).toLocaleString()}
+                      {s.data.printType || 'No type'} — {formatDateTimeDotDMY(s.createdAt)}
                     </p>
                   </Link>
                   <div className="flex shrink-0 flex-wrap gap-2">

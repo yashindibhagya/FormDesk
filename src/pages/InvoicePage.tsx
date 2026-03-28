@@ -19,6 +19,7 @@ import { useSubmissionsStore } from '../store/useSubmissionsStore'
 import type { InvoiceFormData, InvoiceRecord } from '../types/invoice'
 import type { SurveyFormData } from '../types/survey'
 import { createEmptyLineItem, type QuotationLineItem } from '../types/quotation'
+import { formatDateDotDMY } from '../lib/dateDisplay'
 
 const DEFAULT_INTRO =
   'Please find below the invoice in respect of the above. Kindly arrange settlement as per the amounts shown.'
@@ -28,16 +29,6 @@ const DEFAULT_CLOSING =
 
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10)
-}
-
-function formatDisplayDate(iso: string): string {
-  if (!iso?.trim()) return ''
-  const parts = iso.trim().split('-').map(Number)
-  const y = parts[0]
-  const m = parts[1]
-  const d = parts[2]
-  if (!y || !m || !d) return iso.trim()
-  return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`
 }
 
 function formatQuantityForLine(data: SurveyFormData): string {
@@ -165,7 +156,7 @@ export function InvoicePage() {
     }, 3500)
   }, [])
 
-  const invoiceDateDisplay = useMemo(() => formatDisplayDate(invoiceDate), [invoiceDate])
+  const invoiceDateDisplay = useMemo(() => formatDateDotDMY(invoiceDate), [invoiceDate])
 
   const buildFormData = useCallback((): InvoiceFormData => {
     return {

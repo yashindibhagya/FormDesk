@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import logoMawp from '../../assets/logo 1.jpg'
+import { formatDateDotDMY, formatDateTimeDotDMY } from '../../lib/dateDisplay'
 import type { Submission } from '../../types/survey'
 import { Card } from '../ui/Card'
 
@@ -74,7 +75,7 @@ export function SubmissionPrintDocumentShell({
 
 export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }: Props) {
   const { data } = submission
-  const created = new Date(submission.createdAt).toLocaleString()
+  const created = formatDateTimeDotDMY(submission.createdAt)
   const sewingLayout = getSewingLayout(data.sizeWidth || '', data.sizeHeight || '')
   const thumbImages = [data.designThumb1, data.designThumb2, data.designThumb3].filter(Boolean) as string[]
   const hasAnyImage = !!data.designImage || thumbImages.length > 0
@@ -162,7 +163,7 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
           {/* Schedule */}
           <SectionLabel>Schedule</SectionLabel>
           <InfoCard>
-            <Field label="Order date" value={data.orderDate || '—'} />
+            <Field label="Order date" value={formatDateDotDMY(data.orderDate) || '—'} />
             <div className="pt-2 first:pt-0">
               <p className="text-[11px] text-slate-400 mb-1">Delivered by</p>
               {data.deliveredBy ? (
@@ -170,7 +171,7 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
                   </svg>
-                  {data.deliveredBy}
+                  {formatDateDotDMY(data.deliveredBy)}
                 </span>
               ) : (
                 <span className="text-sm text-slate-700">—</span>
