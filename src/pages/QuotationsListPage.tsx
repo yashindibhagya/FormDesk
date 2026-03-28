@@ -1,0 +1,151 @@
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { Input } from '../components/ui/Input'
+import { Select } from '../components/ui/Select'
+import { firebaseDb } from '../lib/firebase'
+import { useSubmissionsStore } from '../store/useSubmissionsStore'
+
+const PRINT_TYPE_OPTIONS = ['All', 'Embroidery', 'Sublimation', 'Screen Print', 'Sticker']
+
+export function QuotationsListPage() {
+  const submissions = useSubmissionsStore((s) => s.submissions)
+  const deleteSubmission = useSubmissionsStore((s) => s.deleteSubmission)
+  const firestoreReady = useSubmissionsStore((s) => s.firestoreReady)
+  const firestoreError = useSubmissionsStore((s) => s.firestoreError)
+  const [query, setQuery] = useState('')
+  const [printType, setPrintType] = useState('All')
+
+  const filtered = useMemo(() => {
+    let list = submissions
+    const q = query.trim().toLowerCase()
+    if (q) {
+      list = list.filter(
+        (s) =>
+          s.data.orderName.toLowerCase().includes(q) ||
+          s.data.jobNo.toLowerCase().includes(q) ||
+          s.data.ownerName.toLowerCase().includes(q) ||
+          s.data.fabric.toLowerCase().includes(q),
+      )
+    }
+    if (printType !== 'All') {
+      list = list.filter((s) => s.data.printType.toLowerCase().includes(printType.toLowerCase()))
+    }
+    return list
+  }, [submissions, query, printType])
+
+  if (firebaseDb && !firestoreReady) {
+    return (
+      <div className="space-y-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Quotations</h1>
+        <Card className="text-center py-12">
+          <p className="text-slate-600">Loading quotations from Firebase…</p>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-8">
+      {firestoreError ? (
+        <Card className="border-amber-200 bg-amber-50 py-3 text-sm text-amber-900">
+          Firebase: {firestoreError}. Deploy Firestore rules (<code className="rounded bg-amber-100 px-1">firebase deploy
+          --only firestore:rules</code>) and confirm the database exists.
+        </Card>
+      ) : null}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Quotations</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            {filtered.length} of {submissions.length} shown
+            {firebaseDb ? ' — saved in Firestore.' : ' — stored only on this device.'}
+          </p>
+        </div>
+        <Button to="/quotation">+ New quotation</Button>
+      </div>
+
+      <Card padding="sm" className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="sm:col-span-2">
+            <label htmlFor="q-search" className="mb-1 block text-xs font-medium text-slate-500">
+              Search
+            </label>
+            <Input
+              id="q-search"
+              placeholder="Order name, Job No, Owner, Fabric"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="q-filter-print" className="mb-1 block text-xs font-medium text-slate-500">
+              Print type
+            </label>
+            <Select id="q-filter-print" value={printType} onChange={(e) => setPrintType(e.target.value)}>
+              {PRINT_TYPE_OPTIONS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </div>
+      </Card>
+
+      {filtered.length === 0 ? (
+        <Card className="text-center">
+          <p className="text-slate-600">
+            {submissions.length === 0
+              ? 'No orders yet. Create an order on the dashboard, then open its quotation here.'
+              : 'No matches for your filters.'}
+          </p>
+          {submissions.length === 0 ? (
+            <div className="mt-4">
+              <Button to="/survey">Create order</Button>
+            </div>
+          ) : null}
+        </Card>
+      ) : (
+        <ul className="space-y-3">
+          {filtered.map((s) => (
+            <li key={s.id}>
+              <Card padding="sm" className="transition hover:border-slate-300">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <Link to={`/quotation/${s.id}`} className="min-w-0 flex-1 group">
+                    <p className="font-medium text-slate-900 group-hover:text-blue-600">{s.data.orderName}</p>
+                    <p className="mt-1 truncate text-sm text-slate-500">
+                      Job: {s.data.jobNo} - {s.data.ownerName}
+                    </p>
+                    <p className="mt-1 truncate text-xs text-slate-400">
+                      {s.data.printType || 'No type'} - {new Date(s.createdAt).toLocaleString()}
+                    </p>
+                  </Link>
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <Button to={`/quotation/${s.id}`} variant="secondary">
+                      View
+                    </Button>
+                    <Button to={`/submission/${s.id}/edit`} variant="secondary">
+                      Edit
+                    </Button>
+                    <Button
+                      variant="danger"
+                      onClick={() => {
+                        if (!window.confirm('Delete this order? Its quotation will no longer be available here.')) return
+                        void deleteSubmission(s.id).catch(() => {
+                          window.alert('Could not delete. Check Firebase rules and your connection.')
+                        })
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}

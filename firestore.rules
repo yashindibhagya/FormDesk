@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // No Authentication — open access to `submissions` and `invoices` only.
+    // Safe only on trusted networks / internal tools. Do not use on a public internet URL.
+    match /submissions/{submissionId} {
+      allow read, write: if true;
+    }
+
+    match /invoices/{invoiceId} {
+      allow read, write: if true;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
