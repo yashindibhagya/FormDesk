@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import logoMawp from '../../assets/logo 1.jpg'
 import type { Submission } from '../../types/survey'
 import { Card } from '../ui/Card'
 
@@ -116,14 +117,13 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
       {/* ── Header (matches reference: navy title, date top-right) ── */}
       <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-3 mb-4 print:pb-3 print:mb-4">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 shrink-0 rounded-lg bg-[#042C53] flex items-center justify-center">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B5D4F4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <path d="M8 12h8M12 8v8" />
-            </svg>
-          </div>
+          <img
+            src={logoMawp}
+            alt="MAWP"
+            className="h-9 w-9 shrink-0 rounded-lg object-contain"
+          />
           <div className="min-w-0">
-            <p className="text-base font-semibold leading-tight text-[#042C53]">PrintCo Orders</p>
+            <p className="text-base font-semibold leading-tight text-[#042C53]">MAWPrinting Orders</p>
             <p className="text-xs text-slate-500 mt-1">Order confirmation &amp; review</p>
           </div>
         </div>
