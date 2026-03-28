@@ -24,6 +24,22 @@ body {
   @apply min-h-svh;
 }
 
+/*
+ * Order summary grid: viewport breakpoints (md/lg) stay false when the window is narrow
+ * even if .print-document is 1152px off-screen — PDF capture then looks like a single column
+ * while Print uses @media print. Container queries key off the document width instead.
+ */
+.print-document {
+  container-type: inline-size;
+  container-name: printdoc;
+}
+
+@container printdoc (min-width: 34rem) {
+  .order-layout-grid {
+    grid-template-columns: minmax(14rem, 32%) 1fr !important;
+  }
+}
+
 /* Hidden print portal in wizard: render only while printing. */
 .print-portal-host {
   display: none;

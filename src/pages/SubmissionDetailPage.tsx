@@ -18,7 +18,8 @@ export function SubmissionDetailPage() {
   const deleteSubmission = useSubmissionsStore((s) => s.deleteSubmission)
   const printRef = useRef<HTMLDivElement>(null)
   const toastTimerRef = useRef<number>(0)
-  const [exporting, setExporting] = useState(false)
+  const [exportingPng, setExportingPng] = useState(false)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
   const [copiedImage, setCopiedImage] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(
     null,
@@ -43,26 +44,26 @@ export function SubmissionDetailPage() {
     return `formflow-${submission.data.orderName.replace(/\s+/g, '-').slice(0, 40) || 'order'}`
   }, [submission])
 
-  const handlePdf = useCallback(async () => {
+  const handleDownloadPdf = useCallback(async () => {
     if (!printRef.current || !submission) return
-    setExporting(true)
+    setDownloadingPdf(true)
     try {
       await downloadSubmissionPdf(printRef.current, exportBaseName)
-      showToast('PDF downloaded.', 'success')
+      showToast('PDF downloaded (A4 — same order layout as Print).', 'success')
     } catch (err) {
       const message =
         err instanceof Error
           ? err.message
-          : 'Could not build PDF. Try again or use another browser.'
+          : 'Could not build PDF. Try Print or another browser.'
       showToast(message.length > 200 ? `${message.slice(0, 197)}…` : message, 'error')
     } finally {
-      setExporting(false)
+      setDownloadingPdf(false)
     }
   }, [submission, showToast, exportBaseName])
 
   const handleDownloadPng = useCallback(async () => {
     if (!printRef.current || !submission) return
-    setExporting(true)
+    setExportingPng(true)
     try {
       await downloadSubmissionPng(printRef.current, exportBaseName)
       showToast('PNG downloaded.', 'success')
@@ -70,10 +71,10 @@ export function SubmissionDetailPage() {
       const message =
         err instanceof Error
           ? err.message
-          : 'Could not save image. Try another browser or use Print / Save as PDF.'
+          : 'Could not save image. Try Download PDF, Print, or another browser.'
       showToast(message.length > 200 ? `${message.slice(0, 197)}…` : message, 'error')
     } finally {
-      setExporting(false)
+      setExportingPng(false)
     }
   }, [submission, showToast, exportBaseName])
 
@@ -121,20 +122,28 @@ export function SubmissionDetailPage() {
           <p className="mt-1 text-sm text-slate-500">
             Job {submission.data.jobNo} · {submission.data.ownerName}
           </p>
+          <p className="mt-2 max-w-xl text-sm text-slate-600">
+            Download PDF saves this order confirmation as an A4 file (same two-column layout as Print). Use Print if
+            you prefer the browser&apos;s PDF dialog.
+          </p>
         </div>
         <div className="flex w-full max-w-md flex-col gap-3 lg:max-w-sm lg:shrink-0">
           <Button
             type="button"
             className="w-full py-3 text-base shadow-md"
-            onClick={handlePrintDocument}
+            onClick={() => void handleDownloadPdf()}
+            disabled={downloadingPdf}
           >
-            Print / Save as PDF
+            {downloadingPdf ? 'Creating PDF…' : 'Download PDF'}
+          </Button>
+          <Button type="button" variant="secondary" className="w-full py-3 text-base" onClick={handlePrintDocument}>
+            Print
           </Button>
           <Button
             type="button"
             className="w-full py-3 text-base shadow-md"
             onClick={handleCopyImage}
-            disabled={copiedImage || exporting}
+            disabled={copiedImage || exportingPng || downloadingPdf}
           >
             {copiedImage ? 'Copied image' : 'Copy as image'}
           </Button>
@@ -142,9 +151,9 @@ export function SubmissionDetailPage() {
             type="button"
             className="w-full py-3 text-base shadow-md"
             onClick={handleDownloadPng}
-            disabled={exporting}
+            disabled={exportingPng || downloadingPdf}
           >
-            {exporting ? 'Building…' : 'Download PNG'}
+            {exportingPng ? 'Building…' : 'Download PNG'}
           </Button>
           <Button to={`/quotation/${submission.id}`} className="w-full py-3 text-base shadow-md" variant="secondary">
             Open quotation
@@ -167,14 +176,6 @@ export function SubmissionDetailPage() {
           >
             Delete
           </Button>
-          <details className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm">
-            <summary className="cursor-pointer font-medium text-slate-700">More export options</summary>
-            <div className="mt-2">
-              <Button type="button" variant="secondary" className="w-full" onClick={handlePdf} disabled={exporting}>
-                {exporting ? 'Building…' : 'Download image PDF'}
-              </Button>
-            </div>
-          </details>
         </div>
       </div>
 

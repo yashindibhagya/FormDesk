@@ -8,7 +8,11 @@ import { Card } from '../components/ui/Card'
 import { FormField } from '../components/ui/FormField'
 import { Input } from '../components/ui/Input'
 import { Textarea } from '../components/ui/Textarea'
-import { copyElementImageToClipboard, copyOrderAndDocumentImageToClipboard } from '../lib/exportSubmission'
+import {
+  copyElementImageToClipboard,
+  copyOrderAndDocumentImageToClipboard,
+  downloadOrderAndLetterheadDocumentPdf,
+} from '../lib/exportSubmission'
 import { printOrderDocument } from '../lib/printOrderDocument'
 import { useSubmissionsStore } from '../store/useSubmissionsStore'
 import type { SurveyFormData } from '../types/survey'
@@ -74,6 +78,7 @@ export function QuotationPage() {
   const quotationCaptureRef = useRef<HTMLDivElement>(null)
   const toastTimerRef = useRef<number>(0)
   const [copiedImage, setCopiedImage] = useState(false)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(
     null,
   )
@@ -113,6 +118,33 @@ export function QuotationPage() {
     printOrderDocument()
   }, [])
 
+  const quotationPdfBaseName = useMemo(() => {
+    const date = quotationDate?.trim() || todayIsoDate()
+    const subj = subject?.trim().replace(/\s+/g, '-') || 'quotation'
+    const id = submissionId ? `-${submissionId.slice(0, 8)}` : ''
+    return `quotation-${date}-${subj}${id}`
+  }, [quotationDate, subject, submissionId])
+
+  const handleDownloadPdf = useCallback(async () => {
+    const qEl = quotationCaptureRef.current
+    if (!qEl) return
+    setDownloadingPdf(true)
+    try {
+      await downloadOrderAndLetterheadDocumentPdf(
+        submission ? surveyCaptureRef.current : null,
+        qEl,
+        quotationPdfBaseName,
+      )
+      showToast('PDF downloaded (same layout as Print: A4, order then quotation).', 'success')
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Could not create PDF. Try Print or another browser.'
+      showToast(message.length > 200 ? `${message.slice(0, 197)}…` : message, 'error')
+    } finally {
+      setDownloadingPdf(false)
+    }
+  }, [submission, quotationPdfBaseName, showToast])
+
   const handleCopyImage = useCallback(async () => {
     const qEl = quotationCaptureRef.current
     if (!qEl) return
@@ -129,7 +161,7 @@ export function QuotationPage() {
       const message =
         err instanceof Error
           ? err.message
-          : 'Could not copy image. Try Print / Save as PDF or another browser.'
+          : 'Could not copy image. Try Download PDF, Print, or another browser.'
       showToast(message.length > 200 ? `${message.slice(0, 197)}…` : message, 'error')
     } finally {
       window.setTimeout(() => setCopiedImage(false), 2000)
@@ -166,13 +198,21 @@ export function QuotationPage() {
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Quotation</h1>
           <p className="mt-1 text-sm text-slate-600">
             {submission
-              ? 'Print or copy image: page 1 is the order summary, page 2 is the quotation. The order block is hidden on screen but included in print and copy.'
-              : 'Edit the fields below; the preview uses your letterhead image. Print or copy the quotation.'}
+              ? 'Download PDF matches Print: A4, page 1 order summary, page 2 quotation. The order block is off-screen but included. Or use Print / copy image.'
+              : 'Download PDF saves the quotation as A4. With a linked order, page 1 is the order and page 2 is the quotation.'}
           </p>
         </div>
         <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:min-w-[220px]">
-          <Button type="button" className="w-full py-3 shadow-md" onClick={handlePrint}>
-            Print / Save as PDF
+          <Button
+            type="button"
+            className="w-full py-3 shadow-md"
+            onClick={() => void handleDownloadPdf()}
+            disabled={downloadingPdf}
+          >
+            {downloadingPdf ? 'Creating PDF…' : 'Download PDF'}
+          </Button>
+          <Button type="button" variant="secondary" className="w-full py-3" onClick={handlePrint}>
+            Print
           </Button>
           <Button
             type="button"

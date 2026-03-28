@@ -297,7 +297,60 @@ export async function downloadSubmissionPng(element: HTMLElement, fileBaseName: 
   link.click()
 }
 
-/** Same layout as legacy “Download image PDF” on the submission page: full width between margins, tile vertically. */
+function sanitizePdfFileBaseName(name: string): string {
+  const trimmed = name.trim() || 'document'
+  return trimmed.replace(/[/\\?%*:|"<>]/g, '-').replace(/\s+/g, '-').slice(0, 120)
+}
+
+/** jsPDF A4 portrait, points — matches browser print @page A4. */
+const PDF_MARGIN_PT = 40
+
+function newA4Pdf(): jsPDF {
+  return new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
+}
+
+/** Full printable width, top-aligned — good for order summary (match width; height follows content). */
+function addCanvasFullWidthTopAligned(pdf: jsPDF, canvas: HTMLCanvasElement, marginPt: number) {
+  const pageW = pdf.internal.pageSize.getWidth()
+  const maxW = pageW - 2 * marginPt
+  const cw = canvas.width
+  const ch = canvas.height
+  if (cw <= 0 || ch <= 0) return
+
+  const dispW = maxW
+  const dispH = (ch * dispW) / cw
+  const imgData = canvas.toDataURL('image/png')
+  pdf.addImage(imgData, 'PNG', marginPt, marginPt, dispW, dispH)
+}
+
+/**
+ * Scale raster to cover the full A4 margin box (like print CSS on .quotation-template / .invoice-template).
+ * Fixes “tiny quotation at top, huge white band below” when the capture is wider-than-tall in pixels.
+ */
+function addCanvasCoverA4Margins(pdf: jsPDF, canvas: HTMLCanvasElement, marginPt: number) {
+  const pageW = pdf.internal.pageSize.getWidth()
+  const pageH = pdf.internal.pageSize.getHeight()
+  const maxW = pageW - 2 * marginPt
+  const maxH = pageH - 2 * marginPt
+  const cw = canvas.width
+  const ch = canvas.height
+  if (cw <= 0 || ch <= 0) return
+
+  const scale = Math.max(maxW / cw, maxH / ch)
+  const dispW = cw * scale
+  const dispH = ch * scale
+  const x = marginPt + (maxW - dispW) / 2
+  const y = marginPt + (maxH - dispH) / 2
+  const imgData = canvas.toDataURL('image/png')
+  pdf.addImage(imgData, 'PNG', x, y, dispW, dispH)
+}
+
+function canvasScaledHeightAtFullWidth(canvas: HTMLCanvasElement, maxW: number): number {
+  if (canvas.width <= 0) return 0
+  return (canvas.height * maxW) / canvas.width
+}
+
+/** Full width between margins, tile vertically across A4 pages. */
 function appendCanvasFullWidthTiledToPdf(pdf: jsPDF, canvas: HTMLCanvasElement, margin: number) {
   const imgData = canvas.toDataURL('image/png')
   const pageWidth = pdf.internal.pageSize.getWidth()
@@ -322,9 +375,51 @@ function appendCanvasFullWidthTiledToPdf(pdf: jsPDF, canvas: HTMLCanvasElement, 
 
 export async function downloadSubmissionPdf(element: HTMLElement, fileBaseName: string) {
   const canvas = await captureCanvas(element)
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
-  appendCanvasFullWidthTiledToPdf(pdf, canvas, 40)
-  pdf.save(`${fileBaseName}.pdf`)
+  const pdf = newA4Pdf()
+  const m = PDF_MARGIN_PT
+  const maxW = pdf.internal.pageSize.getWidth() - 2 * m
+  const maxH = pdf.internal.pageSize.getHeight() - 2 * m
+  const scaledH = canvasScaledHeightAtFullWidth(canvas, maxW)
+  if (scaledH <= maxH) {
+    addCanvasFullWidthTopAligned(pdf, canvas, m)
+  } else {
+    appendCanvasFullWidthTiledToPdf(pdf, canvas, m)
+  }
+  pdf.save(`${sanitizePdfFileBaseName(fileBaseName)}.pdf`)
+}
+
+/**
+ * A4 PDF like browser print: page 1 = order summary; page 2 = quotation/invoice sheet-filling (cover scale).
+ */
+export async function downloadOrderAndLetterheadDocumentPdf(
+  orderSummaryElement: HTMLElement | null | undefined,
+  letterheadDocumentElement: HTMLElement,
+  fileBaseName: string,
+) {
+  const pdf = newA4Pdf()
+  const m = PDF_MARGIN_PT
+  const maxW = pdf.internal.pageSize.getWidth() - 2 * m
+  const maxH = pdf.internal.pageSize.getHeight() - 2 * m
+
+  if (orderSummaryElement) {
+    const orderCanvas = await captureCanvas(orderSummaryElement)
+    const orderScaledH = canvasScaledHeightAtFullWidth(orderCanvas, maxW)
+    if (orderScaledH <= maxH) {
+      addCanvasFullWidthTopAligned(pdf, orderCanvas, m)
+    } else {
+      appendCanvasFullWidthTiledToPdf(pdf, orderCanvas, m)
+    }
+    pdf.addPage()
+  }
+
+  const letterCanvas = await captureCanvas(letterheadDocumentElement)
+  const letterScaledH = canvasScaledHeightAtFullWidth(letterCanvas, maxW)
+  if (letterScaledH > maxH) {
+    appendCanvasFullWidthTiledToPdf(pdf, letterCanvas, m)
+  } else {
+    addCanvasCoverA4Margins(pdf, letterCanvas, m)
+  }
+  pdf.save(`${sanitizePdfFileBaseName(fileBaseName)}.pdf`)
 }
 
 function mergeCanvasesVertical(

@@ -143,8 +143,8 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
         </div>
       )}
 
-      {/* ── Main grid: ~1/3 + 2/3; order-layout-grid fixes print when lg: is inactive ── */}
-      <div className="order-layout-grid grid grid-cols-1 gap-4 md:grid-cols-[minmax(14rem,34%)_1fr] lg:grid-cols-[minmax(15rem,34%)_1fr]">
+      {/* ── Main grid: ~1/3 + 2/3; print + index.css @container printdoc match PDF capture to print ── */}
+      <div className="order-layout-grid grid grid-cols-1 gap-4">
 
         {/* ── Left column ── */}
         <div className="space-y-3">

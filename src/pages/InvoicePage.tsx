@@ -8,7 +8,11 @@ import { Card } from '../components/ui/Card'
 import { FormField } from '../components/ui/FormField'
 import { Input } from '../components/ui/Input'
 import { Textarea } from '../components/ui/Textarea'
-import { copyElementImageToClipboard, copyOrderAndDocumentImageToClipboard } from '../lib/exportSubmission'
+import {
+  copyElementImageToClipboard,
+  copyOrderAndDocumentImageToClipboard,
+  downloadOrderAndLetterheadDocumentPdf,
+} from '../lib/exportSubmission'
 import { printOrderDocument } from '../lib/printOrderDocument'
 import { useInvoicesStore } from '../store/useInvoicesStore'
 import { useSubmissionsStore } from '../store/useSubmissionsStore'
@@ -87,6 +91,7 @@ export function InvoicePage() {
   const invoiceCaptureRef = useRef<HTMLDivElement>(null)
   const toastTimerRef = useRef<number>(0)
   const [copiedImage, setCopiedImage] = useState(false)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   const appliedSavedSig = useRef<string | null>(null)
@@ -227,6 +232,32 @@ export function InvoicePage() {
     printOrderDocument()
   }, [])
 
+  const invoicePdfBaseName = useMemo(() => {
+    const date = invoiceDate?.trim() || todayIsoDate()
+    const id = invoiceId ? `-${invoiceId.slice(0, 8)}` : ''
+    return `invoice-${date}${id}`
+  }, [invoiceDate, invoiceId])
+
+  const handleDownloadPdf = useCallback(async () => {
+    const invEl = invoiceCaptureRef.current
+    if (!invEl) return
+    setDownloadingPdf(true)
+    try {
+      await downloadOrderAndLetterheadDocumentPdf(
+        submission ? surveyCaptureRef.current : null,
+        invEl,
+        invoicePdfBaseName,
+      )
+      showToast('PDF downloaded (A4 — same layout as Print: order then invoice).', 'success')
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Could not create PDF. Try Print or another browser.'
+      showToast(message.length > 200 ? `${message.slice(0, 197)}…` : message, 'error')
+    } finally {
+      setDownloadingPdf(false)
+    }
+  }, [submission, invoicePdfBaseName, showToast])
+
   const handleCopyImage = useCallback(async () => {
     const el = invoiceCaptureRef.current
     if (!el) return
@@ -243,7 +274,7 @@ export function InvoicePage() {
       const message =
         err instanceof Error
           ? err.message
-          : 'Could not copy image. Try Print / Save as PDF or another browser.'
+          : 'Could not copy image. Try Download PDF, Print, or another browser.'
       showToast(message.length > 200 ? `${message.slice(0, 197)}…` : message, 'error')
     } finally {
       window.setTimeout(() => setCopiedImage(false), 2000)
@@ -286,23 +317,36 @@ export function InvoicePage() {
           ) : null}
           <p className="mt-1 text-sm text-slate-600">
             {submission
-              ? 'Print or copy image: page 1 is the order summary, page 2 is the invoice. The order block is hidden on screen but included in print and copy.'
-              : 'Edit the fields below; the preview uses the same letterhead as quotations. Save stores the invoice in the invoices collection in Firestore.'}
+              ? 'Download PDF matches Print: A4, page 1 order summary, page 2 invoice. The order block is off-screen but included.'
+              : 'Download PDF saves the invoice letterhead as A4. Save stores data in Firestore.'}
+          </p>
+          <p className="mt-2 max-w-xl text-sm text-slate-600">
+            {submission
+              ? 'Use Download PDF for a file without the print dialog. Page 1 uses the same two-column order layout as the submission screen; page 2 is the invoice.'
+              : 'With no linked order, the PDF is only the invoice sheet. Link from an order to include the order confirmation on page 1.'}
           </p>
         </div>
         <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:min-w-[220px]">
           <Button type="button" className="w-full py-3 shadow-md" onClick={handleSave} disabled={saving}>
             {saving ? 'Saving…' : 'Save invoice'}
           </Button>
-          <Button type="button" className="w-full py-3 shadow-md" variant="secondary" onClick={handlePrint}>
-            Print / Save as PDF
+          <Button
+            type="button"
+            className="w-full py-3 shadow-md"
+            onClick={() => void handleDownloadPdf()}
+            disabled={downloadingPdf}
+          >
+            {downloadingPdf ? 'Creating PDF…' : 'Download PDF'}
+          </Button>
+          <Button type="button" variant="secondary" className="w-full py-3" onClick={handlePrint}>
+            Print
           </Button>
           <Button
             type="button"
             variant="secondary"
             className="w-full py-3"
             onClick={handleCopyImage}
-            disabled={copiedImage}
+            disabled={copiedImage || downloadingPdf}
           >
             {copiedImage
               ? 'Copied'
