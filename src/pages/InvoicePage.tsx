@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import letterheadUrl from '../assets/invoice plain.jpeg'
+import letterheadUrl from '../assets/Quotation.jpg'
 import { InvoiceTemplate } from '../components/invoice/InvoiceTemplate'
 import { SubmissionPrintDocumentShell } from '../components/submission/SubmissionPrintView'
 import { Button } from '../components/ui/Button'
@@ -432,9 +432,8 @@ export function InvoicePage() {
         <div
           role="status"
           aria-live="polite"
-          className={`no-print fixed bottom-6 left-1/2 z-[100] max-w-[min(90vw,28rem)] -translate-x-1/2 rounded-lg px-4 py-3 text-sm shadow-lg ${
-            toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
-          }`}
+          className={`no-print fixed bottom-6 left-1/2 z-[100] max-w-[min(90vw,28rem)] -translate-x-1/2 rounded-lg px-4 py-3 text-sm shadow-lg ${toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
+            }`}
         >
           {toast.message}
         </div>
