@@ -52,6 +52,10 @@ if (config) {
   console.warn(
     '[firebase] Set VITE_FIREBASE_* in .env.local (see .env.example). Firestore and Analytics are disabled until then.',
   )
+} else {
+  console.warn(
+    '[firebase] Missing VITE_FIREBASE_* at build time. Add them in Vercel → Settings → Environment Variables, then redeploy. Firestore sync is off.',
+  )
 }
 
 export { firebaseApp, firebaseDb, firebaseAnalytics }

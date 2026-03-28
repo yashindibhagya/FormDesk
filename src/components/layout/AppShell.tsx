@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
+import { useAuth } from '../../auth/AuthProvider'
+import { firebaseDb } from '../../lib/firebase'
 import { Sidebar } from './Sidebar'
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { firebaseConfigured } = useAuth()
+  const showOfflineBanner = !firebaseDb || !firebaseConfigured
 
   return (
     <div className="flex min-h-svh bg-slate-50">
@@ -36,6 +40,18 @@ export function AppShell() {
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-8 print:p-0">
           <div className="mx-auto max-w-5xl print:max-w-none">
+            {showOfflineBanner ? (
+              <div
+                className="no-print mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+                role="status"
+              >
+                <strong className="font-semibold">Not connected to Firestore.</strong> Submissions and
+                invoices are stored only on this device. In Vercel, add all{' '}
+                <code className="rounded bg-amber-100/90 px-1 text-xs">VITE_FIREBASE_*</code> variables
+                (same values as <code className="rounded bg-amber-100/90 px-1 text-xs">.env.local</code>),
+                then trigger a new deployment so the build can embed them.
+              </div>
+            ) : null}
             <Outlet />
           </div>
         </main>

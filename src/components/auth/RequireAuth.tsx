@@ -1,14 +1,9 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthProvider'
-import { firebaseApp } from '../../lib/firebase'
 
 export function RequireAuth() {
   const { user, loading } = useAuth()
   const location = useLocation()
-
-  if (!firebaseApp) {
-    return <Outlet />
-  }
 
   if (loading) {
     return (

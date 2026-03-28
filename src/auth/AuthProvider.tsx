@@ -14,14 +14,15 @@ import {
   type SessionUser,
 } from '../lib/appSessionAuth'
 import { isAllowedSignInEmail } from '../lib/authAllowlist'
-import { firebaseApp } from '../lib/firebase'
+import { firebaseApp, firebaseDb } from '../lib/firebase'
 
 type AuthContextValue = {
   user: SessionUser | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
   signOutUser: () => void
-  authEnabled: boolean
+  /** Firebase client config was present at build time (Firestore can sync). */
+  firebaseConfigured: boolean
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -49,11 +50,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      user: firebaseApp ? user : null,
+      user,
       loading,
       signIn,
       signOutUser,
-      authEnabled: Boolean(firebaseApp),
+      firebaseConfigured: Boolean(firebaseApp && firebaseDb),
     }),
     [user, loading, signIn, signOutUser],
   )

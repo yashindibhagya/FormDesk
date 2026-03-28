@@ -19,7 +19,7 @@ function redirectPath(state: unknown): string {
 }
 
 export function LoginPage() {
-  const { user, loading, signIn, authEnabled } = useAuth()
+  const { user, loading, signIn, firebaseConfigured } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = redirectPath(location.state)
@@ -29,17 +29,13 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  if (authEnabled && !loading && user) {
+  if (!loading && user) {
     return <Navigate to={from} replace />
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
-    if (!authEnabled) {
-      setError('App is not configured. Add VITE_FIREBASE_* to .env.local.')
-      return
-    }
     setSubmitting(true)
     try {
       await signIn(email, password)
@@ -59,6 +55,17 @@ export function LoginPage() {
         <h1 className="text-center text-xl font-semibold text-slate-900">FormFlow</h1>
         <p className="mt-1 text-center text-sm text-slate-600">Sign in to continue</p>
 
+        {!firebaseConfigured ? (
+          <p
+            className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+            role="status"
+          >
+            Cloud sync is off: Firebase env vars were missing at build time. Add{' '}
+            <code className="rounded bg-amber-100/80 px-1">VITE_FIREBASE_*</code> in Vercel → Environment
+            Variables, then redeploy. Until then, surveys save only in this browser.
+          </p>
+        ) : null}
+
         <form className="mt-8 space-y-5" onSubmit={(e) => void handleSubmit(e)}>
           <FormField label="Email" htmlFor="login-email" required>
             <Input
@@ -69,7 +76,7 @@ export function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              disabled={submitting || !authEnabled}
+              disabled={submitting}
             />
           </FormField>
           <FormField label="Password" htmlFor="login-password" required>
@@ -81,7 +88,7 @@ export function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              disabled={submitting || !authEnabled}
+              disabled={submitting}
             />
           </FormField>
 
@@ -91,7 +98,7 @@ export function LoginPage() {
             </p>
           ) : null}
 
-          <Button type="submit" className="w-full" disabled={submitting || !authEnabled}>
+          <Button type="submit" className="w-full" disabled={submitting}>
             {submitting ? 'Signing in…' : 'Sign in'}
           </Button>
         </form>
