@@ -8,7 +8,7 @@ export function AppShell() {
   return (
     <div className="flex min-h-svh bg-slate-50">
       <aside
-        className={`no-print fixed inset-y-0 left-0 z-40 w-64 border-r border-slate-200 bg-white lg:static lg:z-0 ${
+        className={`no-print fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-white lg:static lg:min-h-svh lg:z-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } transition-transform duration-200 ease-out`}
       >

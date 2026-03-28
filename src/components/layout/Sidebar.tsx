@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
+import { useAuth } from '../../auth/AuthProvider'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
@@ -12,12 +13,13 @@ type Props = {
 }
 
 export function Sidebar({ onNavigate }: Props) {
+  const { user, signOutUser } = useAuth()
   const { pathname } = useLocation()
   const quotationsNavActive = pathname === '/quotations' || pathname === '/quotation' || /^\/quotation\/.+/.test(pathname)
   const invoicesNavActive = pathname === '/invoices' || pathname === '/invoice' || /^\/invoice\/.+/.test(pathname)
 
   return (
-    <nav className="flex flex-col gap-1 p-4" aria-label="Main">
+    <nav className="flex h-full min-h-0 flex-col gap-1 p-4" aria-label="Main">
       <div className="mb-6 px-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
           FormFlow
@@ -48,6 +50,24 @@ export function Sidebar({ onNavigate }: Props) {
         <ReceiptIcon />
         Invoices
       </NavLink>
+
+      {user ? (
+        <div className="mt-auto border-t border-slate-100 pt-4">
+          <p className="mb-2 truncate px-3 text-xs text-slate-500" title={user.email ?? undefined}>
+            {user.email}
+          </p>
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+            onClick={() => {
+              void signOutUser()
+              onNavigate?.()
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+      ) : null}
     </nav>
   )
 }
