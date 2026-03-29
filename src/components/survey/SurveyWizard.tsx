@@ -255,7 +255,7 @@ export function SurveyWizard({
               image={values.designThumb1 ?? ''}
               onChange={(event) => onDesignImageChange('designThumb1', event)}
               onRemove={() => clearDesignImage('designThumb1')}
-              className="h-12 rounded-xl"
+              className="h-24 rounded-xl"
               compact
             />
             <UploadSlot
@@ -263,7 +263,7 @@ export function SurveyWizard({
               image={values.designThumb2 ?? ''}
               onChange={(event) => onDesignImageChange('designThumb2', event)}
               onRemove={() => clearDesignImage('designThumb2')}
-              className="h-12 rounded-xl"
+              className="h-24 rounded-xl"
               compact
             />
             <UploadSlot
@@ -271,7 +271,7 @@ export function SurveyWizard({
               image={values.designThumb3 ?? ''}
               onChange={(event) => onDesignImageChange('designThumb3', event)}
               onRemove={() => clearDesignImage('designThumb3')}
-              className="h-12 rounded-xl"
+              className="h-24 rounded-xl"
               compact
             />
           </div>
@@ -731,10 +731,14 @@ function UploadSlot({
       className={`relative overflow-hidden border border-dashed border-slate-300 bg-slate-50 ${className}`}
     >
       {image ? (
-        <img src={image} alt="" className="pointer-events-none h-full w-full object-cover" />
+        <img
+          src={image}
+          alt=""
+          className="pointer-events-none h-full w-full object-contain object-center"
+        />
       ) : (
         <div
-          className={`flex h-full w-full items-center justify-center text-slate-500 ${compact ? 'text-[11px]' : 'text-sm font-medium'}`}
+          className={`flex h-full w-full items-center justify-center text-slate-500 ${compact ? 'text-xs' : 'text-sm font-medium'}`}
         >
           {label}
         </div>
@@ -754,12 +758,12 @@ function UploadSlot({
           type="button"
           onClick={handleRemoveClick}
           className={`absolute z-10 flex items-center justify-center rounded-full bg-slate-900/80 text-white shadow-sm hover:bg-slate-900 ${
-            compact ? 'right-0.5 top-0.5 h-5 w-5' : 'right-1.5 top-1.5 h-8 w-8'
+            compact ? 'right-1 top-1 h-6 w-6' : 'right-1.5 top-1.5 h-8 w-8'
           }`}
           aria-label={`Remove ${label}`}
         >
           <svg
-            className={compact ? 'h-3 w-3' : 'h-4 w-4'}
+            className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
