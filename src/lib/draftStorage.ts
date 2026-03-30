@@ -23,7 +23,27 @@ export function loadSurveyDraft(): SurveyDraft | null {
 }
 
 export function saveSurveyDraft(draft: SurveyDraft) {
-  localStorage.setItem(STORAGE_KEYS.surveyDraft, JSON.stringify(draft))
+  try {
+    localStorage.setItem(STORAGE_KEYS.surveyDraft, JSON.stringify(draft))
+    return
+  } catch {
+    // Fallback for browser quota: persist draft without heavy image blobs.
+    const compactDraft: SurveyDraft = {
+      ...draft,
+      values: {
+        ...draft.values,
+        designImage: '',
+        designThumb1: '',
+        designThumb2: '',
+        designThumb3: '',
+      },
+    }
+    try {
+      localStorage.setItem(STORAGE_KEYS.surveyDraft, JSON.stringify(compactDraft))
+    } catch {
+      // If storage is still full, keep the app running without autosave persistence.
+    }
+  }
 }
 
 export function clearSurveyDraft() {

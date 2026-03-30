@@ -26,7 +26,7 @@ function getSewingLayout(widthRaw: string, heightRaw: string): {
   if (!width || !height) return { aspectRatio: 16 / 9 }
   if (height > width) {
     // Keep portrait sewing diagrams tighter so print/PDF stays on one page.
-    return { aspectRatio: 2 / 3, maxWidthPx: 250 }
+    return { aspectRatio: 2 / 3, maxWidthPx: 210 }
   }
   const landscapeRatio = width / height
   return { aspectRatio: Math.min(Math.max(landscapeRatio, 1), 12 / 5) }
@@ -180,76 +180,6 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
             </div>
           </InfoCard>
 
-          {/* Design images */}
-          {hasAnyImage && (
-            <>
-              <SectionLabel>Design previews</SectionLabel>
-              <InfoCard className="overflow-hidden">
-                {data.designImage && (
-                  <img
-                    src={data.designImage}
-                    alt="Design preview"
-                    className="w-full h-40 object-contain object-center rounded-lg mb-2 bg-slate-50"
-                  />
-                )}
-                {thumbImages.length > 0 && (
-                  <div className={`grid grid-cols-3 gap-1.5 ${data.designImage ? 'mt-2' : ''}`}>
-                    {thumbImages.map((src, idx) => (
-                      <img
-                        key={`${src}-${idx}`}
-                        src={src}
-                        alt={`Design thumbnail ${idx + 1}`}
-                        className="h-24 w-full rounded-md object-contain object-center border border-slate-100 bg-slate-50"
-                      />
-                    ))}
-                  </div>
-                )}
-              </InfoCard>
-            </>
-          )}
-        </div>
-
-        {/* ── Right column ── */}
-        <div className="space-y-3">
-
-          {/* Print specs */}
-          <SectionLabel>Print specifications</SectionLabel>
-          <SpecCard title="Print">
-            <SpecRow label="Fabric" value={data.fabric || '—'} />
-            {data.printType === 'Banner' ? (
-              <div className="flex items-center gap-2 border-b border-slate-100 py-2 last:border-b-0">
-                <span className="w-24 shrink-0 text-xs text-slate-500">Quantity</span>
-                <div className="grid flex-1 grid-cols-3 gap-2">
-                  <span className="flex min-h-[30px] items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
-                    Normal: {data.quantityNormal || '—'}
-                  </span>
-                  <span className="flex min-h-[30px] items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
-                    Left: {data.quantityLeft || '—'}
-                  </span>
-                  <span className="flex min-h-[30px] items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
-                    Right: {data.quantityRight || '—'}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <SpecRow label="Quantity" value={data.quantity || '—'} />
-            )}
-            <div className="flex items-center gap-2 border-b border-slate-100 py-2 last:border-b-0">
-              <span className="w-24 shrink-0 text-xs text-slate-500">Size</span>
-              <div className="flex flex-1 gap-2">
-                <span className="flex min-h-[30px] flex-1 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
-                  H: {data.sizeHeight || '—'}
-                </span>
-                <span className="flex min-h-[30px] flex-1 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
-                  W: {data.sizeWidth || '—'}
-                </span>
-              </div>
-            </div>
-            <SpecRow label="Method" value={data.method || '—'} />
-            <SpecRow label="Type" value={data.printType || '—'} />
-            <SpecRow label="Description" value={data.printDescription || '—'} />
-          </SpecCard>
-
           {/* Sewing */}
           <SectionLabel>Sewing</SectionLabel>
           <SpecCard title="Sewing instructions">
@@ -265,7 +195,7 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                 </div>
                 <div className="rounded-lg bg-slate-50 px-2 py-1.5 print:px-1.5 print:py-1">
                   <div
-                    className="relative mx-auto w-full print:max-w-[250px]"
+                    className="relative mx-auto w-full max-w-[210px] print:max-w-[210px]"
                     style={{
                       aspectRatio: sewingLayout.aspectRatio,
                       maxWidth: sewingLayout.maxWidthPx ? `${sewingLayout.maxWidthPx}px` : undefined,
@@ -378,6 +308,76 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
               </div>
             )}
           </SpecCard>
+        </div>
+
+        {/* ── Right column ── */}
+        <div className="space-y-3">
+
+          {/* Print specs */}
+          <SectionLabel>Print specifications</SectionLabel>
+          <SpecCard title="Print">
+            <SpecRow label="Fabric" value={data.fabric || '—'} />
+            {data.printType === 'Banner' ? (
+              <div className="flex items-center gap-2 border-b border-slate-100 py-2 last:border-b-0">
+                <span className="w-24 shrink-0 text-xs text-slate-500">Quantity</span>
+                <div className="grid flex-1 grid-cols-3 gap-2">
+                  <span className="flex min-h-[30px] items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
+                    Normal: {data.quantityNormal || '—'}
+                  </span>
+                  <span className="flex min-h-[30px] items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
+                    Left: {data.quantityLeft || '—'}
+                  </span>
+                  <span className="flex min-h-[30px] items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
+                    Right: {data.quantityRight || '—'}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <SpecRow label="Quantity" value={data.quantity || '—'} />
+            )}
+            <div className="flex items-center gap-2 border-b border-slate-100 py-2 last:border-b-0">
+              <span className="w-24 shrink-0 text-xs text-slate-500">Size</span>
+              <div className="flex flex-1 gap-2">
+                <span className="flex min-h-[30px] flex-1 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
+                  H: {data.sizeHeight || '—'}
+                </span>
+                <span className="flex min-h-[30px] flex-1 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
+                  W: {data.sizeWidth || '—'}
+                </span>
+              </div>
+            </div>
+            <SpecRow label="Method" value={data.method || '—'} />
+            <SpecRow label="Type" value={data.printType || '—'} />
+            <SpecRow label="Description" value={data.printDescription || '—'} />
+          </SpecCard>
+
+          {/* Design images */}
+          {hasAnyImage && (
+            <>
+              <SectionLabel>Design previews</SectionLabel>
+              <InfoCard className="overflow-hidden min-h-[520px]">
+                {data.designImage && (
+                  <img
+                    src={data.designImage}
+                    alt="Design preview"
+                    className="w-full h-[450px] object-contain object-center rounded-lg mb-2 bg-slate-50"
+                  />
+                )}
+                {thumbImages.length > 0 && (
+                  <div className={`grid grid-cols-3 gap-1.5 ${data.designImage ? 'mt-2' : ''}`}>
+                    {thumbImages.map((src, idx) => (
+                      <img
+                        key={`${src}-${idx}`}
+                        src={src}
+                        alt={`Design thumbnail ${idx + 1}`}
+                        className="h-24 w-full rounded-md object-contain object-center border border-slate-100 bg-slate-50"
+                      />
+                    ))}
+                  </div>
+                )}
+              </InfoCard>
+            </>
+          )}
 
           {/* Delivery notes */}
           {data.deliveryNotes?.trim() && (

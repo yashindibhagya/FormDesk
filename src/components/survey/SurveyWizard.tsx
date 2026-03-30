@@ -120,7 +120,7 @@ export function SurveyWizard({
     formState: { errors, isSubmitting },
   } = form
 
-  const values = useWatch({ control, defaultValue: EMPTY_SURVEY })
+  const values = useWatch({ control, defaultValue: defaultValues })
   const sewingLayout = useMemo(
     () => getSewingLayout(values.sizeWidth ?? '', values.sizeHeight ?? ''),
     [values.sizeWidth, values.sizeHeight],
@@ -155,14 +155,15 @@ export function SurveyWizard({
 
   const onValid = useCallback(
     async (data: SurveyFormData) => {
+      const compactImages = await shrinkSurveyImagesForSave(data)
       if (mode === 'edit' && submissionId) {
         const payload = {
-          ...data,
+          ...compactImages,
           fabric:
-            data.fabric === FABRIC_CUSTOM_VALUE
-              ? data.fabricCustom.trim()
-              : data.fabric,
-          quantity: formatQuantity(data),
+            compactImages.fabric === FABRIC_CUSTOM_VALUE
+              ? compactImages.fabricCustom.trim()
+              : compactImages.fabric,
+          quantity: formatQuantity(compactImages),
         }
         try {
           await updateSubmission(submissionId, payload)
@@ -175,12 +176,12 @@ export function SurveyWizard({
         return
       }
       const payload = {
-        ...data,
+        ...compactImages,
         fabric:
-          data.fabric === FABRIC_CUSTOM_VALUE
-            ? data.fabricCustom.trim()
-            : data.fabric,
-        quantity: formatQuantity(data),
+          compactImages.fabric === FABRIC_CUSTOM_VALUE
+            ? compactImages.fabricCustom.trim()
+            : compactImages.fabric,
+        quantity: formatQuantity(compactImages),
       }
       try {
         const id = await addSubmission(payload)
@@ -199,7 +200,11 @@ export function SurveyWizard({
     async (field: 'designImage' | 'designThumb1' | 'designThumb2' | 'designThumb3', event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0]
       if (!file) return
-      const dataUrl = await fileToDataUrl(file)
+      const isMain = field === 'designImage'
+      const dataUrl = await fileToDataUrl(file, {
+        maxDimension: isMain ? 900 : 360,
+        quality: isMain ? 0.55 : 0.48,
+      })
       setValue(field, dataUrl, { shouldDirty: true, shouldTouch: true })
     },
     [setValue],
@@ -248,6 +253,10 @@ export function SurveyWizard({
             onRemove={() => clearDesignImage('designImage')}
             className="h-40 rounded-2xl"
           />
+          <input type="hidden" {...register('designImage')} />
+          <input type="hidden" {...register('designThumb1')} />
+          <input type="hidden" {...register('designThumb2')} />
+          <input type="hidden" {...register('designThumb3')} />
 
           <div className="grid grid-cols-3 gap-3">
             <UploadSlot
@@ -691,13 +700,78 @@ function SectionCard({ title, children }: { title: string; children: ReactNode }
   )
 }
 
-async function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
+/** Smaller JPEG for Firestore: main + 3 thumbs stay under quota and upload quickly. */
+async function shrinkSurveyImagesForSave(data: SurveyFormData): Promise<SurveyFormData> {
+  const next = { ...data }
+  const compressOne = async (
+    key: 'designImage' | 'designThumb1' | 'designThumb2' | 'designThumb3',
+    maxDimension: number,
+    quality: number,
+  ) => {
+    const v = data[key]
+    if (typeof v !== 'string' || !v.trim().startsWith('data:image')) return
+    next[key] = await compressDataUrlToJpeg(v, maxDimension, quality)
+  }
+  await Promise.all([
+    compressOne('designImage', 720, 0.46),
+    compressOne('designThumb1', 280, 0.4),
+    compressOne('designThumb2', 280, 0.4),
+    compressOne('designThumb3', 280, 0.4),
+  ])
+  return next
+}
+
+function compressDataUrlToJpeg(dataUrl: string, maxDimension: number, quality: number): Promise<string> {
+  if (!dataUrl.trim().startsWith('data:image')) {
+    return Promise.resolve(dataUrl)
+  }
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const width = img.naturalWidth || img.width
+      const height = img.naturalHeight || img.height
+      if (!width || !height) {
+        resolve(dataUrl)
+        return
+      }
+
+      const scale = Math.min(1, maxDimension / Math.max(width, height))
+      const targetW = Math.max(1, Math.round(width * scale))
+      const targetH = Math.max(1, Math.round(height * scale))
+
+      const canvas = document.createElement('canvas')
+      canvas.width = targetW
+      canvas.height = targetH
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        resolve(dataUrl)
+        return
+      }
+      ctx.drawImage(img, 0, 0, targetW, targetH)
+      const compressed = canvas.toDataURL('image/jpeg', quality)
+      resolve(compressed || dataUrl)
+    }
+    img.onerror = () => resolve(dataUrl)
+    img.src = dataUrl
+  })
+}
+
+async function fileToDataUrl(
+  file: File,
+  options?: { maxDimension?: number; quality?: number },
+): Promise<string> {
+  const baseDataUrl = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(String(reader.result ?? ''))
     reader.onerror = () => reject(new Error('Failed to read image file'))
     reader.readAsDataURL(file)
   })
+
+  if (!file.type.startsWith('image/')) return baseDataUrl
+
+  const maxDimension = options?.maxDimension ?? 900
+  const quality = options?.quality ?? 0.55
+  return compressDataUrlToJpeg(baseDataUrl, maxDimension, quality)
 }
 
 function UploadSlot({
