@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import { firebaseDb } from '../lib/firebase'
 import { deleteInvoiceFromFirestore, saveInvoiceToFirestore } from '../lib/firestoreInvoices'
 import { STORAGE_KEYS } from '../lib/constants'
+import { getFinancialYearLabel } from '../lib/financialYear'
 import type { InvoiceFormData, InvoiceRecord } from '../types/invoice'
 
 type InvoicesState = {
@@ -97,6 +98,7 @@ const createInvoicesSlice = (
       id,
       createdAt: prev?.createdAt ?? now,
       updatedAt: now,
+      financialYear: prev?.financialYear ?? getFinancialYearLabel(prev?.createdAt ?? now),
       submissionId,
       data,
     }

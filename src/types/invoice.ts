@@ -26,6 +26,7 @@ export type InvoiceRecord = {
   id: string
   createdAt: string
   updatedAt: string
+  financialYear: string
   /** Order this invoice was opened from, if any; null for standalone invoices. */
   submissionId: string | null
   data: InvoiceFormData

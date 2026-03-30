@@ -6,9 +6,11 @@ import {
   orderBy,
   query,
   setDoc,
+  Timestamp,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { firebaseDb } from './firebase'
+import { getFinancialYearLabel } from './financialYear'
 import type { InvoiceFormData, InvoiceRecord } from '../types/invoice'
 import { EMPTY_INVOICE_FORM, ensureLineItems } from '../types/invoice'
 import { createEmptyLineItem, type QuotationLineItem } from '../types/quotation'
@@ -30,10 +32,33 @@ function normalizeLineItems(raw: unknown): QuotationLineItem[] {
 
 function normalizeInvoice(id: string, raw: Record<string, unknown> | undefined): InvoiceRecord | null {
   if (!raw) return null
-  const createdAt = typeof raw.createdAt === 'string' ? raw.createdAt : null
-  const updatedAt = typeof raw.updatedAt === 'string' ? raw.updatedAt : createdAt
+  const createdAtRaw = raw.createdAt
+  let createdAt: string | null = null
+  if (createdAtRaw instanceof Timestamp) {
+    createdAt = createdAtRaw.toDate().toISOString()
+  } else if (typeof createdAtRaw === 'string') {
+    const t = Date.parse(createdAtRaw)
+    createdAt = Number.isNaN(t) ? null : new Date(t).toISOString()
+  }
+  const updatedAtRaw = raw.updatedAt
+  let updatedAt: string | null = null
+  if (updatedAtRaw instanceof Timestamp) {
+    updatedAt = updatedAtRaw.toDate().toISOString()
+  } else if (typeof updatedAtRaw === 'string') {
+    const t = Date.parse(updatedAtRaw)
+    updatedAt = Number.isNaN(t) ? null : new Date(t).toISOString()
+  } else {
+    updatedAt = createdAt
+  }
+  const financialYearRaw = raw.financialYear
+  const financialYear =
+    typeof financialYearRaw === 'string' && financialYearRaw.trim()
+      ? financialYearRaw.trim()
+      : createdAt
+        ? getFinancialYearLabel(createdAt)
+        : null
   const surveyData = raw.data
-  if (!createdAt || !surveyData || typeof surveyData !== 'object' || Array.isArray(surveyData)) return null
+  if (!createdAt || !updatedAt || !financialYear || !surveyData || typeof surveyData !== 'object' || Array.isArray(surveyData)) return null
 
   const submissionRaw = raw.submissionId
   const submissionId =
@@ -53,7 +78,8 @@ function normalizeInvoice(id: string, raw: Record<string, unknown> | undefined):
   return {
     id,
     createdAt,
-    updatedAt: updatedAt ?? createdAt,
+    updatedAt,
+    financialYear,
     submissionId,
     data,
   }
@@ -61,11 +87,17 @@ function normalizeInvoice(id: string, raw: Record<string, unknown> | undefined):
 
 export async function saveInvoiceToFirestore(record: InvoiceRecord): Promise<void> {
   if (!firebaseDb) throw new Error('Firestore is not configured')
+  const createdAtMs = Date.parse(record.createdAt)
+  const updatedAtMs = Date.parse(record.updatedAt)
+  const createdAt = Number.isNaN(createdAtMs) ? Timestamp.now() : Timestamp.fromDate(new Date(createdAtMs))
+  const updatedAt = Number.isNaN(updatedAtMs) ? Timestamp.now() : Timestamp.fromDate(new Date(updatedAtMs))
+  const financialYear = record.financialYear?.trim() || getFinancialYearLabel(createdAt.toDate())
   await setDoc(
     doc(firebaseDb, COLL, record.id),
     {
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
+      createdAt,
+      updatedAt,
+      financialYear,
       submissionId: record.submissionId,
       data: record.data,
     },

@@ -6,9 +6,11 @@ import {
   orderBy,
   query,
   setDoc,
+  Timestamp,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { firebaseDb } from './firebase'
+import { getFinancialYearLabel } from './financialYear'
 import type { Submission, SurveyFormData } from '../types/survey'
 import { EMPTY_SURVEY } from '../types/survey'
 
@@ -16,22 +18,41 @@ const COLL = 'submissions'
 
 function normalizeSubmission(id: string, raw: Record<string, unknown> | undefined): Submission | null {
   if (!raw) return null
-  const createdAt = typeof raw.createdAt === 'string' ? raw.createdAt : null
+  const createdAtRaw = raw.createdAt
+  let createdAt: string | null = null
+  if (createdAtRaw instanceof Timestamp) {
+    createdAt = createdAtRaw.toDate().toISOString()
+  } else if (typeof createdAtRaw === 'string') {
+    const t = Date.parse(createdAtRaw)
+    createdAt = Number.isNaN(t) ? null : new Date(t).toISOString()
+  }
+  const financialYearRaw = raw.financialYear
+  const financialYear =
+    typeof financialYearRaw === 'string' && financialYearRaw.trim()
+      ? financialYearRaw.trim()
+      : createdAt
+        ? getFinancialYearLabel(createdAt)
+        : null
   const surveyData = raw.data
-  if (!createdAt || !surveyData || typeof surveyData !== 'object' || Array.isArray(surveyData)) return null
+  if (!createdAt || !financialYear || !surveyData || typeof surveyData !== 'object' || Array.isArray(surveyData)) return null
   return {
     id,
     createdAt,
+    financialYear,
     data: { ...EMPTY_SURVEY, ...(surveyData as SurveyFormData) },
   }
 }
 
 export async function saveSubmissionToFirestore(sub: Submission): Promise<void> {
   if (!firebaseDb) throw new Error('Firestore is not configured')
+  const createdAtMs = Date.parse(sub.createdAt)
+  const createdAt = Number.isNaN(createdAtMs) ? Timestamp.now() : Timestamp.fromDate(new Date(createdAtMs))
+  const financialYear = sub.financialYear?.trim() || getFinancialYearLabel(createdAt.toDate())
   await setDoc(
     doc(firebaseDb, COLL, sub.id),
     {
-      createdAt: sub.createdAt,
+      createdAt,
+      financialYear,
       data: sub.data,
     },
     { merge: true },

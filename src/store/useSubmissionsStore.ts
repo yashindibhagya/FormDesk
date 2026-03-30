@@ -6,6 +6,7 @@ import {
   saveSubmissionToFirestore,
 } from '../lib/firestoreSubmissions'
 import { STORAGE_KEYS } from '../lib/constants'
+import { getFinancialYearLabel } from '../lib/financialYear'
 import type { Submission, SurveyFormData } from '../types/survey'
 
 type SubmissionsState = {
@@ -97,6 +98,7 @@ const createSubmissionsSlice = (
       id,
       data,
       createdAt: new Date().toISOString(),
+      financialYear: getFinancialYearLabel(new Date()),
     }
     if (useFirebase) {
       try {
@@ -119,7 +121,12 @@ const createSubmissionsSlice = (
   updateSubmission: async (id, data) => {
     const prev = get().submissions.find((s) => s.id === id)
     const createdAt = prev?.createdAt ?? new Date().toISOString()
-    const submission: Submission = { id, data, createdAt }
+    const submission: Submission = {
+      id,
+      data,
+      createdAt,
+      financialYear: prev?.financialYear ?? getFinancialYearLabel(createdAt),
+    }
     if (useFirebase) {
       try {
         await saveSubmissionToFirestore(submission)

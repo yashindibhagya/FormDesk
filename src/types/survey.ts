@@ -67,6 +67,7 @@ export type Submission = {
   id: string
   data: SurveyFormData
   createdAt: string
+  financialYear: string
 }
 
 export const EMPTY_SURVEY: SurveyFormData = {

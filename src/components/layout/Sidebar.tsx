@@ -14,9 +14,11 @@ type Props = {
 
 export function Sidebar({ onNavigate }: Props) {
   const { user, signOutUser } = useAuth()
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const quotationsNavActive = pathname === '/quotations' || pathname === '/quotation' || /^\/quotation\/.+/.test(pathname)
   const invoicesNavActive = pathname === '/invoices' || pathname === '/invoice' || /^\/invoice\/.+/.test(pathname)
+  const isOrdersFilterActive = (time: string) =>
+    pathname === '/' && search.includes('ordersOnly=1') && search.includes(`time=${time}`)
 
   return (
     <nav className="flex h-full min-h-0 flex-col gap-1 p-4" aria-label="Main">
@@ -50,6 +52,37 @@ export function Sidebar({ onNavigate }: Props) {
         <ReceiptIcon />
         Invoices
       </NavLink>
+      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
+        <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Orders filters</p>
+        <NavLink
+          to="/?ordersOnly=1&time=all"
+          className={linkClass({ isActive: isOrdersFilterActive('all') })}
+          onClick={onNavigate}
+        >
+          All orders
+        </NavLink>
+        <NavLink
+          to="/?ordersOnly=1&time=last7days"
+          className={linkClass({ isActive: isOrdersFilterActive('last7days') })}
+          onClick={onNavigate}
+        >
+          Last 7 days
+        </NavLink>
+        <NavLink
+          to="/?ordersOnly=1&time=currentFy"
+          className={linkClass({ isActive: isOrdersFilterActive('currentFy') })}
+          onClick={onNavigate}
+        >
+          Current financial year
+        </NavLink>
+        <NavLink
+          to="/?ordersOnly=1&time=previousFy"
+          className={linkClass({ isActive: isOrdersFilterActive('previousFy') })}
+          onClick={onNavigate}
+        >
+          Previous financial years
+        </NavLink>
+      </div>
 
       {user ? (
         <div className="mt-auto border-t border-slate-100 pt-4">

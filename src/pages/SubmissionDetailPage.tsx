@@ -127,21 +127,26 @@ export function SubmissionDetailPage() {
             you prefer the browser&apos;s PDF dialog.
           </p>
         </div>
-        <div className="flex w-full max-w-md flex-col gap-3 lg:max-w-sm lg:shrink-0">
+        <div className="grid w-full max-w-md grid-cols-2 gap-2 lg:max-w-sm lg:shrink-0">
           <Button
             type="button"
-            className="w-full py-3 text-base shadow-md"
+            className="w-full py-2.5 text-sm shadow-md"
             onClick={() => void handleDownloadPdf()}
             disabled={downloadingPdf}
           >
             {downloadingPdf ? 'Creating PDF…' : 'Download PDF'}
           </Button>
-          <Button type="button" variant="secondary" className="w-full py-3 text-base" onClick={handlePrintDocument}>
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full py-2.5 text-sm"
+            onClick={handlePrintDocument}
+          >
             Print
           </Button>
           <Button
             type="button"
-            className="w-full py-3 text-base shadow-md"
+            className="w-full py-2.5 text-sm shadow-md"
             onClick={handleCopyImage}
             disabled={copiedImage || exportingPng || downloadingPdf}
           >
@@ -149,22 +154,30 @@ export function SubmissionDetailPage() {
           </Button>
           <Button
             type="button"
-            className="w-full py-3 text-base shadow-md"
+            className="w-full py-2.5 text-sm shadow-md"
             onClick={handleDownloadPng}
             disabled={exportingPng || downloadingPdf}
           >
             {exportingPng ? 'Building…' : 'Download PNG'}
           </Button>
-          <Button to={`/quotation/${submission.id}`} className="w-full py-3 text-base shadow-md" variant="secondary">
+          <Button
+            to={`/quotation/${submission.id}`}
+            className="w-full py-2.5 text-sm shadow-md"
+            variant="secondary"
+          >
             Open quotation
           </Button>
-          <Button to={`/invoice/${submission.id}`} className="w-full py-3 text-base shadow-md" variant="secondary">
+          <Button
+            to={`/invoice/${submission.id}`}
+            className="w-full py-2.5 text-sm shadow-md"
+            variant="secondary"
+          >
             Open invoice
           </Button>
           <Button
             type="button"
             variant="danger"
-            className="w-full"
+            className="col-span-2 w-full py-2.5 text-sm"
             onClick={() => {
               if (!window.confirm('Delete this submission? This cannot be undone.')) return
               void deleteSubmission(submission.id)
@@ -185,11 +198,10 @@ export function SubmissionDetailPage() {
         <div
           role="status"
           aria-live="polite"
-          className={`no-print fixed bottom-6 left-1/2 z-[100] max-w-[min(90vw,28rem)] -translate-x-1/2 rounded-lg px-4 py-3 text-sm shadow-lg ${
-            toast.type === 'success'
+          className={`no-print fixed bottom-6 left-1/2 z-[100] max-w-[min(90vw,28rem)] -translate-x-1/2 rounded-lg px-4 py-3 text-sm shadow-lg ${toast.type === 'success'
               ? 'bg-slate-900 text-white'
               : 'bg-red-600 text-white'
-          }`}
+            }`}
         >
           {toast.message}
         </div>
