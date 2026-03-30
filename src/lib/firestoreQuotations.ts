@@ -97,6 +97,12 @@ export async function saveQuotationToFirestore(record: QuotationRecord): Promise
   const createdAt = Number.isNaN(createdAtMs) ? Timestamp.now() : Timestamp.fromDate(new Date(createdAtMs))
   const updatedAt = Number.isNaN(updatedAtMs) ? Timestamp.now() : Timestamp.fromDate(new Date(updatedAtMs))
   const financialYear = record.financialYear?.trim() || getFinancialYearLabel(createdAt.toDate())
+  const persistedData = {
+    quotationDate: record.data.quotationDate,
+    customerAddress: record.data.customerAddress,
+    subject: record.data.subject,
+    lineItems: ensureLineItems(record.data.lineItems),
+  }
   await setDoc(
     doc(firebaseDb, COLL, record.id),
     {
@@ -104,7 +110,7 @@ export async function saveQuotationToFirestore(record: QuotationRecord): Promise
       updatedAt,
       financialYear,
       submissionId: record.submissionId,
-      data: record.data,
+      data: persistedData,
     },
     { merge: true },
   )
