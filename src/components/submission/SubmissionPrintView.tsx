@@ -77,13 +77,16 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
   const { data } = submission
   const created = formatDateTimeDotDMY(submission.createdAt)
   const sewingLayout = getSewingLayout(data.sizeWidth || '', data.sizeHeight || '')
-  const designPreviewImages = [
-    data.designImage,
-    data.designThumb1,
-    data.designThumb2,
-    data.designThumb3,
-  ].filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
-  const hasAnyImage = designPreviewImages.length > 0
+  const designPreviewItems = [
+    { src: data.designImage, qty: data.designImageQty },
+    { src: data.designThumb1, qty: data.designThumb1Qty },
+    { src: data.designThumb2, qty: data.designThumb2Qty },
+    { src: data.designThumb3, qty: data.designThumb3Qty },
+  ].filter(
+    (item): item is { src: string; qty: string } =>
+      typeof item.src === 'string' && item.src.trim().length > 0,
+  )
+  const hasAnyImage = designPreviewItems.length > 0
 
   const fabricBodyRowRef = useRef<HTMLDivElement>(null)
   const [fabricBodyHeightPx, setFabricBodyHeightPx] = useState(0)
@@ -356,15 +359,20 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
               <SectionLabel>Design previews</SectionLabel>
               <InfoCard className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <div
-                  className={`grid flex-1 gap-2 ${designPreviewImages.length >= 3 ? 'grid-cols-2' : designPreviewImages.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}
+                  className={`grid min-h-0 flex-1 gap-2 auto-rows-fr ${designPreviewItems.length >= 2 ? 'grid-cols-2' : 'grid-cols-1'}`}
                 >
-                  {designPreviewImages.map((src, idx) => (
+                  {designPreviewItems.map((item, idx) => (
                     <div
                       key={`preview-${idx}`}
-                      className="flex aspect-square min-h-[7.5rem] items-center justify-center rounded-lg border border-slate-100 bg-slate-50 p-1 sm:min-h-[8.5rem]"
+                      className="relative flex aspect-square min-h-0 w-full min-w-0 items-center justify-center overflow-hidden rounded-lg border border-slate-100 bg-slate-50 p-1"
                     >
+                      {item.qty?.trim() ? (
+                        <span className="pointer-events-none absolute left-1 top-1 z-10 max-w-[calc(100%-0.5rem)] truncate rounded bg-slate-900/85 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white shadow-sm">
+                          Qty {item.qty.trim()}
+                        </span>
+                      ) : null}
                       <img
-                        src={src}
+                        src={item.src}
                         alt={`Design ${idx + 1}`}
                         className="max-h-full max-w-full object-contain object-center"
                       />

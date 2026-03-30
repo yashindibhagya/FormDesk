@@ -2,9 +2,13 @@ export type SurveyFormData = {
   orderDate: string
   deliveredBy: string
   designImage: string
+  designImageQty: string
   designThumb1: string
+  designThumb1Qty: string
   designThumb2: string
+  designThumb2Qty: string
   designThumb3: string
+  designThumb3Qty: string
   jobNo: string
   orderName: string
   ownerName: string
@@ -74,9 +78,13 @@ export const EMPTY_SURVEY: SurveyFormData = {
   orderDate: '',
   deliveredBy: '',
   designImage: '',
+  designImageQty: '',
   designThumb1: '',
+  designThumb1Qty: '',
   designThumb2: '',
+  designThumb2Qty: '',
   designThumb3: '',
+  designThumb3Qty: '',
   jobNo: '',
   orderName: '',
   ownerName: '',

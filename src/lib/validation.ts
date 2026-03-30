@@ -7,9 +7,13 @@ export const surveySchema = z
     orderDate: z.string().trim().min(1, 'Order date is required'),
     deliveredBy: z.string().trim(),
     designImage: z.string().trim(),
+    designImageQty: z.string().trim(),
     designThumb1: z.string().trim(),
+    designThumb1Qty: z.string().trim(),
     designThumb2: z.string().trim(),
+    designThumb2Qty: z.string().trim(),
     designThumb3: z.string().trim(),
+    designThumb3Qty: z.string().trim(),
     jobNo: z.string().trim(),
     orderName: z.string().trim(),
     ownerName: z.string().trim(),
@@ -75,28 +79,26 @@ export const surveySchema = z
         message: 'Enter a custom fabric name',
       })
     }
+    const designQtySlots = [
+      { src: values.designImage, qty: values.designImageQty, path: 'designImageQty' as const },
+      { src: values.designThumb1, qty: values.designThumb1Qty, path: 'designThumb1Qty' as const },
+      { src: values.designThumb2, qty: values.designThumb2Qty, path: 'designThumb2Qty' as const },
+      { src: values.designThumb3, qty: values.designThumb3Qty, path: 'designThumb3Qty' as const },
+    ]
+    const filledDesigns = designQtySlots.filter((s) => s.src.trim())
+    if (filledDesigns.length > 1) {
+      for (const slot of filledDesigns) {
+        if (!slot.qty.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [slot.path],
+            message: 'Enter quantity for each design',
+          })
+        }
+      }
+    }
+    // Banner uses Normal / Left / Right only — all optional; do not require the single `quantity` field (hidden in UI).
     if (values.printType === 'Banner') {
-      if (!values.quantityNormal.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['quantityNormal'],
-          message: 'Normal quantity is required',
-        })
-      }
-      if (!values.quantityLeft.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['quantityLeft'],
-          message: 'Left quantity is required',
-        })
-      }
-      if (!values.quantityRight.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['quantityRight'],
-          message: 'Right quantity is required',
-        })
-      }
       return
     }
     if (!values.quantity.trim()) {

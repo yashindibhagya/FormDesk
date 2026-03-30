@@ -23,6 +23,19 @@ type Props = {
 }
 
 const FABRIC_CUSTOM_VALUE = '__custom__'
+type DesignImageKey = 'designImage' | 'designThumb1' | 'designThumb2' | 'designThumb3'
+const DESIGN_IMAGE_QTY_FIELD: Record<DesignImageKey, keyof SurveyFormData> = {
+  designImage: 'designImageQty',
+  designThumb1: 'designThumb1Qty',
+  designThumb2: 'designThumb2Qty',
+  designThumb3: 'designThumb3Qty',
+}
+const DESIGN_GRID_SLOTS: { field: DesignImageKey; label: string }[] = [
+  { field: 'designImage', label: 'Design 1' },
+  { field: 'designThumb1', label: 'Design 2' },
+  { field: 'designThumb2', label: 'Design 3' },
+  { field: 'designThumb3', label: 'Design 4' },
+]
 const FABRIC_OPTIONS = [
   'Satin',
   'Butter Silk',
@@ -121,6 +134,15 @@ export function SurveyWizard({
   } = form
 
   const values = useWatch({ control, defaultValue: defaultValues })
+  const designImageCount = useMemo(() => {
+    return [
+      values.designImage,
+      values.designThumb1,
+      values.designThumb2,
+      values.designThumb3,
+    ].filter((s) => typeof s === 'string' && s.trim().length > 0).length
+  }, [values.designImage, values.designThumb1, values.designThumb2, values.designThumb3])
+  const showPerDesignQuantity = designImageCount > 1
   const sewingLayout = useMemo(
     () => getSewingLayout(values.sizeWidth ?? '', values.sizeHeight ?? ''),
     [values.sizeWidth, values.sizeHeight],
@@ -197,7 +219,7 @@ export function SurveyWizard({
   )
 
   const onDesignImageChange = useCallback(
-    async (field: 'designImage' | 'designThumb1' | 'designThumb2' | 'designThumb3', event: ChangeEvent<HTMLInputElement>) => {
+    async (field: DesignImageKey, event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0]
       if (!file) return
       const isMain = field === 'designImage'
@@ -211,8 +233,9 @@ export function SurveyWizard({
   )
 
   const clearDesignImage = useCallback(
-    (field: 'designImage' | 'designThumb1' | 'designThumb2' | 'designThumb3') => {
+    (field: DesignImageKey) => {
       setValue(field, '', { shouldDirty: true, shouldTouch: true })
+      setValue(DESIGN_IMAGE_QTY_FIELD[field], '', { shouldDirty: true, shouldTouch: true })
     },
     [setValue],
   )
@@ -246,44 +269,41 @@ export function SurveyWizard({
             </div>
           </div>
 
-          <UploadSlot
-            label="Insert design"
-            image={values.designImage ?? ''}
-            onChange={(event) => onDesignImageChange('designImage', event)}
-            onRemove={() => clearDesignImage('designImage')}
-            className="h-40 rounded-2xl"
-          />
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Designs</p>
+          <div className="grid grid-cols-2 gap-3">
+            {DESIGN_GRID_SLOTS.map(({ field, label }) => {
+              const qtyField = DESIGN_IMAGE_QTY_FIELD[field]
+              const imageVal = values[field] ?? ''
+              const qtyErr = errors[qtyField]?.message
+              return (
+                <div key={field} className="flex min-h-0 flex-col gap-2">
+                  <UploadSlot
+                    label={label}
+                    image={imageVal}
+                    onChange={(event) => onDesignImageChange(field, event)}
+                    onRemove={() => clearDesignImage(field)}
+                    className="aspect-square w-full min-w-0 rounded-xl"
+                    compact
+                  />
+                  {showPerDesignQuantity && imageVal.trim() ? (
+                    <FormField label="Qty" htmlFor={qtyField} error={qtyErr} required>
+                      <Input
+                        id={qtyField}
+                        inputMode="numeric"
+                        placeholder="Qty"
+                        error={!!qtyErr}
+                        {...register(qtyField)}
+                      />
+                    </FormField>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
           <input type="hidden" {...register('designImage')} />
           <input type="hidden" {...register('designThumb1')} />
           <input type="hidden" {...register('designThumb2')} />
           <input type="hidden" {...register('designThumb3')} />
-
-          <div className="grid grid-cols-3 gap-3">
-            <UploadSlot
-              label="Image 1"
-              image={values.designThumb1 ?? ''}
-              onChange={(event) => onDesignImageChange('designThumb1', event)}
-              onRemove={() => clearDesignImage('designThumb1')}
-              className="h-24 rounded-xl"
-              compact
-            />
-            <UploadSlot
-              label="Image 2"
-              image={values.designThumb2 ?? ''}
-              onChange={(event) => onDesignImageChange('designThumb2', event)}
-              onRemove={() => clearDesignImage('designThumb2')}
-              className="h-24 rounded-xl"
-              compact
-            />
-            <UploadSlot
-              label="Image 3"
-              image={values.designThumb3 ?? ''}
-              onChange={(event) => onDesignImageChange('designThumb3', event)}
-              onRemove={() => clearDesignImage('designThumb3')}
-              className="h-24 rounded-xl"
-              compact
-            />
-          </div>
 
           <div className="space-y-3">
             <FormField label="Job No" htmlFor="jobNo" error={errors.jobNo?.message}>
@@ -378,7 +398,6 @@ export function SurveyWizard({
                       label="Normal"
                       htmlFor="quantityNormal"
                       error={errors.quantityNormal?.message}
-                      required
                     >
                       <Input
                         id="quantityNormal"
@@ -390,7 +409,6 @@ export function SurveyWizard({
                       label="Left"
                       htmlFor="quantityLeft"
                       error={errors.quantityLeft?.message}
-                      required
                     >
                       <Input
                         id="quantityLeft"
@@ -402,7 +420,6 @@ export function SurveyWizard({
                       label="Right"
                       htmlFor="quantityRight"
                       error={errors.quantityRight?.message}
-                      required
                     >
                       <Input
                         id="quantityRight"
