@@ -155,7 +155,7 @@ export function DashboardPage() {
       {firestoreError ? (
         <Card className="border-amber-200 bg-amber-50 py-3 text-sm text-amber-900">
           Firebase: {firestoreError}. Deploy Firestore rules (<code className="rounded bg-amber-100 px-1">firebase deploy
-          --only firestore:rules</code>) and confirm the database exists.
+            --only firestore:rules</code>) and confirm the database exists.
         </Card>
       ) : null}
       {invoicesError ? (
@@ -183,9 +183,8 @@ export function DashboardPage() {
                   key={row.key}
                   type="button"
                   onClick={() => setSelectedMonthKey(isSelected ? null : row.key)}
-                  className={`rounded-xl border bg-white p-4 text-left shadow-sm transition hover:border-slate-300 hover:shadow ${
-                    isSelected ? 'border-blue-500 ring-2 ring-blue-500 ring-offset-2' : 'border-slate-200'
-                  }`}
+                  className={`rounded-xl border bg-white p-4 text-left shadow-sm transition hover:border-slate-300 hover:shadow ${isSelected ? 'border-blue-500 ring-2 ring-blue-500 ring-offset-2' : 'border-slate-200'
+                    }`}
                 >
                   <p className="text-sm font-semibold text-slate-900">{row.label}</p>
                   <p className="mt-3 text-2xl font-semibold tabular-nums text-slate-800">
@@ -328,7 +327,7 @@ export function DashboardPage() {
         </Card>
       ) : null}
 
-      <Card padding="sm" className="space-y-4">
+      {/* <Card padding="sm" className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-2">
             <label htmlFor="search" className="mb-1 block text-xs font-medium text-slate-500">
@@ -372,61 +371,16 @@ export function DashboardPage() {
             </Select>
           </div>
         </div>
-      </Card>
+      </Card> */}
 
-      {filtered.length === 0 ? (
+      {filtered.length === 0 && submissions.length === 0 ? (
         <Card className="text-center">
-          <p className="text-slate-600">
-            {submissions.length === 0
-              ? 'No orders yet. Create one to see it here.'
-              : 'No matches for your filters.'}
-          </p>
-          {submissions.length === 0 ? (
-            <div className="mt-4">
-              <Button to="/survey">Create order</Button>
-            </div>
-          ) : null}
+          <p className="text-slate-600">No orders yet. Create one to see it here.</p>
+          <div className="mt-4">
+            <Button to="/survey">Create order</Button>
+          </div>
         </Card>
-      ) : (
-        <ul className="space-y-3">
-          {filtered.map((s) => (
-            <li key={s.id}>
-              <Card padding="sm" className="transition hover:border-slate-300">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <Link to={`/submission/${s.id}`} className="min-w-0 flex-1 group">
-                    <p className="font-medium text-slate-900 group-hover:text-blue-600">{s.data.orderName}</p>
-                    <p className="mt-1 truncate text-sm text-slate-500">
-                      Job: {s.data.jobNo} - {s.data.ownerName}
-                    </p>
-                    <p className="mt-1 truncate text-xs text-slate-400">
-                      {s.data.printType || 'No type'} — {formatDateTimeDotDMY(s.createdAt)}
-                    </p>
-                  </Link>
-                  <div className="flex shrink-0 flex-wrap gap-2">
-                    <Button to={`/submission/${s.id}`} variant="secondary">
-                      View
-                    </Button>
-                    <Button to={`/submission/${s.id}/edit`} variant="secondary">
-                      Edit
-                    </Button>
-                    <Button
-                      variant="danger"
-                      onClick={() => {
-                        if (!window.confirm('Delete this order? This cannot be undone.')) return
-                        void deleteSubmission(s.id).catch(() => {
-                          window.alert('Could not delete. Check Firebase rules and your connection.')
-                        })
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </li>
-          ))}
-        </ul>
-      )}
+      ) : null}
     </div>
   )
 }
