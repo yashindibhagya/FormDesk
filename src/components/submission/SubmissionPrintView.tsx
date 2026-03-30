@@ -188,7 +188,7 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                   <img
                     src={data.designImage}
                     alt="Design preview"
-                    className="w-full h-36 object-cover rounded-lg mb-2"
+                    className="w-full h-40 object-contain object-center rounded-lg mb-2 bg-slate-50"
                   />
                 )}
                 {thumbImages.length > 0 && (
@@ -198,7 +198,7 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                         key={`${src}-${idx}`}
                         src={src}
                         alt={`Design thumbnail ${idx + 1}`}
-                        className="h-12 w-full rounded-md object-cover border border-slate-100"
+                        className="h-24 w-full rounded-md object-contain object-center border border-slate-100 bg-slate-50"
                       />
                     ))}
                   </div>
