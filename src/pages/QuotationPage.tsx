@@ -13,6 +13,7 @@ import {
   copyOrderAndDocumentImageToClipboard,
   downloadOrderAndLetterheadDocumentPdf,
 } from '../lib/exportSubmission'
+import { buildLineItemsFromSubmission } from '../lib/quotationLineFromSurvey'
 import { printOrderDocument } from '../lib/printOrderDocument'
 import { useQuotationsStore } from '../store/useQuotationsStore'
 import { useSubmissionsStore } from '../store/useSubmissionsStore'
@@ -35,31 +36,6 @@ const DEFAULT_CLOSING =
 
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10)
-}
-
-function formatQuantityForQuotation(data: SurveyFormData): string {
-  if (data.printType === 'Banner') {
-    const n = data.quantityNormal?.trim()
-    const l = data.quantityLeft?.trim()
-    const r = data.quantityRight?.trim()
-    if (n || l || r) return `Normal: ${n || '—'} | Left: ${l || '—'} | Right: ${r || '—'}`
-  }
-  return data.quantity?.trim() || ''
-}
-
-function buildLineFromSubmission(data: SurveyFormData): QuotationLineItem {
-  const parts = [
-    data.printDescription?.trim(),
-    data.fabric ? `Fabric: ${data.fabric}` : '',
-    data.sizeHeight || data.sizeWidth ? `Size: H ${data.sizeHeight || '—'} × W ${data.sizeWidth || '—'}` : '',
-    data.method ? `Method: ${data.method}` : '',
-  ].filter(Boolean)
-  return {
-    id: crypto.randomUUID(),
-    description: parts.join('\n') || '—',
-    qty: formatQuantityForQuotation(data) || '1',
-    unitPrice: '',
-  }
 }
 
 export function QuotationPage() {
@@ -134,7 +110,7 @@ export function QuotationPage() {
     setCustomerAddress(data.address?.trim() || '')
     const subj = [data.printType, data.orderName].filter(Boolean).join(' – ')
     setSubject(subj ? subj.toUpperCase() : 'ITEMS')
-    setLineItems([buildLineFromSubmission(data)])
+    setLineItems(buildLineItemsFromSubmission(data))
   }, [])
 
   useEffect(() => {

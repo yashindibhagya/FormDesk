@@ -20,6 +20,7 @@ import type { InvoiceFormData, InvoiceRecord } from '../types/invoice'
 import type { SurveyFormData } from '../types/survey'
 import { createEmptyLineItem, type QuotationLineItem } from '../types/quotation'
 import { formatDateDotDMY } from '../lib/dateDisplay'
+import { buildLineItemsFromSubmission } from '../lib/quotationLineFromSurvey'
 
 const DEFAULT_INTRO =
   'Please find below the invoice in respect of the above. Kindly arrange settlement as per the amounts shown.'
@@ -29,31 +30,6 @@ const DEFAULT_CLOSING =
 
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10)
-}
-
-function formatQuantityForLine(data: SurveyFormData): string {
-  if (data.printType === 'Banner') {
-    const n = data.quantityNormal?.trim()
-    const l = data.quantityLeft?.trim()
-    const r = data.quantityRight?.trim()
-    if (n || l || r) return `Normal: ${n || '—'} | Left: ${l || '—'} | Right: ${r || '—'}`
-  }
-  return data.quantity?.trim() || ''
-}
-
-function buildLineFromSubmission(data: SurveyFormData): QuotationLineItem {
-  const parts = [
-    data.printDescription?.trim(),
-    data.fabric ? `Fabric: ${data.fabric}` : '',
-    data.sizeHeight || data.sizeWidth ? `Size: H ${data.sizeHeight || '—'} × W ${data.sizeWidth || '—'}` : '',
-    data.method ? `Method: ${data.method}` : '',
-  ].filter(Boolean)
-  return {
-    id: crypto.randomUUID(),
-    description: parts.join('\n') || '—',
-    qty: formatQuantityForLine(data) || '1',
-    unitPrice: '',
-  }
 }
 
 export function InvoicePage() {
@@ -114,7 +90,7 @@ export function InvoicePage() {
   const hydrateFromSubmission = useCallback((data: SurveyFormData) => {
     setInvoiceDate(data.orderDate?.trim() || todayIsoDate())
     setCustomerAddress(data.address?.trim() || '')
-    setLineItems([buildLineFromSubmission(data)])
+    setLineItems(buildLineItemsFromSubmission(data))
   }, [])
 
   useEffect(() => {
