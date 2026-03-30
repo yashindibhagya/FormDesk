@@ -4,6 +4,7 @@ import { RequireAuth } from './components/auth/RequireAuth'
 import { AppShell } from './components/layout/AppShell'
 import { firebaseDb } from './lib/firebase'
 import { startFirestoreInvoicesListener } from './lib/firestoreInvoices'
+import { startFirestoreQuotationsListener } from './lib/firestoreQuotations'
 import { startFirestoreSubmissionsListener } from './lib/firestoreSubmissions'
 import { DashboardPage } from './pages/DashboardPage'
 import { EditSurveyPage } from './pages/EditSurveyPage'
@@ -15,6 +16,7 @@ import { QuotationsListPage } from './pages/QuotationsListPage'
 import { LoginPage } from './pages/LoginPage'
 import { SubmissionDetailPage } from './pages/SubmissionDetailPage'
 import { useInvoicesStore } from './store/useInvoicesStore'
+import { useQuotationsStore } from './store/useQuotationsStore'
 import { useSubmissionsStore } from './store/useSubmissionsStore'
 
 export default function App() {
@@ -28,9 +30,14 @@ export default function App() {
       (list) => useInvoicesStore.getState().applyRemoteInvoices(list),
       (msg) => useInvoicesStore.getState().setFirestoreError(msg),
     )
+    const unsubQuotations = startFirestoreQuotationsListener(
+      (list) => useQuotationsStore.getState().applyRemoteQuotations(list),
+      (msg) => useQuotationsStore.getState().setFirestoreError(msg),
+    )
     return () => {
       unsubSubmissions()
       unsubInvoices()
+      unsubQuotations()
     }
   }, [])
 

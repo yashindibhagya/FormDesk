@@ -6,6 +6,7 @@ import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { firebaseDb } from '../lib/firebase'
 import { formatDateTimeDotDMY } from '../lib/dateDisplay'
+import { useQuotationsStore } from '../store/useQuotationsStore'
 import { useSubmissionsStore } from '../store/useSubmissionsStore'
 
 const PRINT_TYPE_OPTIONS = ['All', 'Embroidery', 'Sublimation', 'Screen Print', 'Sticker']
@@ -13,13 +14,38 @@ const PRINT_TYPE_OPTIONS = ['All', 'Embroidery', 'Sublimation', 'Screen Print', 
 export function QuotationsListPage() {
   const submissions = useSubmissionsStore((s) => s.submissions)
   const deleteSubmission = useSubmissionsStore((s) => s.deleteSubmission)
-  const firestoreReady = useSubmissionsStore((s) => s.firestoreReady)
+  const submissionsReady = useSubmissionsStore((s) => s.firestoreReady)
   const firestoreError = useSubmissionsStore((s) => s.firestoreError)
+  const quotations = useQuotationsStore((s) => s.quotations)
+  const quotationsReady = useQuotationsStore((s) => s.firestoreReady)
+  const quotationsError = useQuotationsStore((s) => s.firestoreError)
   const [query, setQuery] = useState('')
   const [printType, setPrintType] = useState('All')
 
+  const quotationSubmissions = useMemo(() => {
+    const byId = new Map(submissions.map((s) => [s.id, s] as const))
+    return quotations
+      .map((q) => {
+        const linked = q.submissionId ? byId.get(q.submissionId) : undefined
+        if (!linked && byId.has(q.id)) {
+          return byId.get(q.id) ?? null
+        }
+        return linked ?? null
+      })
+      .filter((s): s is NonNullable<typeof s> => Boolean(s))
+  }, [quotations, submissions])
+
+  const uniqueQuotationSubmissions = useMemo(() => {
+    const seen = new Set<string>()
+    return quotationSubmissions.filter((s) => {
+      if (seen.has(s.id)) return false
+      seen.add(s.id)
+      return true
+    })
+  }, [quotationSubmissions])
+
   const filtered = useMemo(() => {
-    let list = submissions
+    let list = uniqueQuotationSubmissions
     const q = query.trim().toLowerCase()
     if (q) {
       list = list.filter(
@@ -34,9 +60,9 @@ export function QuotationsListPage() {
       list = list.filter((s) => s.data.printType.toLowerCase().includes(printType.toLowerCase()))
     }
     return list
-  }, [submissions, query, printType])
+  }, [uniqueQuotationSubmissions, query, printType])
 
-  if (firebaseDb && !firestoreReady) {
+  if (firebaseDb && (!submissionsReady || !quotationsReady)) {
     return (
       <div className="space-y-8">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Quotations</h1>
@@ -55,11 +81,16 @@ export function QuotationsListPage() {
           --only firestore:rules</code>) and confirm the database exists.
         </Card>
       ) : null}
+      {quotationsError ? (
+        <Card className="border-amber-200 bg-amber-50 py-3 text-sm text-amber-900">
+          Quotations: {quotationsError}
+        </Card>
+      ) : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Quotations</h1>
           <p className="mt-1 text-sm text-slate-600">
-            {filtered.length} of {submissions.length} shown
+            {filtered.length} of {uniqueQuotationSubmissions.length} shown
             {firebaseDb ? ' — saved in Firestore.' : ' — stored only on this device.'}
           </p>
         </div>
@@ -97,13 +128,13 @@ export function QuotationsListPage() {
       {filtered.length === 0 ? (
         <Card className="text-center">
           <p className="text-slate-600">
-            {submissions.length === 0
-              ? 'No orders yet. Create an order on the dashboard, then open its quotation here.'
+            {uniqueQuotationSubmissions.length === 0
+              ? 'No saved quotations yet. Open a quotation and click Save quotation.'
               : 'No matches for your filters.'}
           </p>
-          {submissions.length === 0 ? (
+          {uniqueQuotationSubmissions.length === 0 ? (
             <div className="mt-4">
-              <Button to="/survey">Create order</Button>
+              <Button to="/">Go to dashboard</Button>
             </div>
           ) : null}
         </Card>

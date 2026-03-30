@@ -52,7 +52,7 @@ async function backfillCollectionFinancialYear(coll: string): Promise<number> {
       const createdAtTs = toTimestamp(raw.createdAt)
       if (createdAtTs && !(raw.createdAt instanceof admin.firestore.Timestamp)) patch.createdAt = createdAtTs
 
-      if (coll === 'invoices') {
+      if (coll === 'invoices' || coll === 'quotations') {
         const updatedAtTs = toTimestamp(raw.updatedAt)
         if (updatedAtTs && !(raw.updatedAt instanceof admin.firestore.Timestamp)) {
           patch.updatedAt = updatedAtTs
@@ -112,12 +112,13 @@ export const backfillFinancialYear = onRequest({ region: 'europe-west1' }, async
     return
   }
 
-  const [submissionsUpdated, invoicesUpdated] = await Promise.all([
+  const [submissionsUpdated, invoicesUpdated, quotationsUpdated] = await Promise.all([
     backfillCollectionFinancialYear('submissions'),
     backfillCollectionFinancialYear('invoices'),
+    backfillCollectionFinancialYear('quotations'),
   ])
-  info('Backfilled financialYear', { submissionsUpdated, invoicesUpdated })
-  res.json({ ok: true, submissionsUpdated, invoicesUpdated })
+  info('Backfilled financialYear', { submissionsUpdated, invoicesUpdated, quotationsUpdated })
+  res.json({ ok: true, submissionsUpdated, invoicesUpdated, quotationsUpdated })
 })
 
 /** Scheduled cleanup: delete records older than 2 years by createdAt. */
@@ -128,10 +129,11 @@ export const purgeRecordsOlderThanTwoYears = onSchedule(
     region: 'europe-west1',
   },
   async () => {
-    const [submissionsDeleted, invoicesDeleted] = await Promise.all([
+    const [submissionsDeleted, invoicesDeleted, quotationsDeleted] = await Promise.all([
       purgeCollectionOlderThanTwoYears('submissions'),
       purgeCollectionOlderThanTwoYears('invoices'),
+      purgeCollectionOlderThanTwoYears('quotations'),
     ])
-    info('Purged records older than two years', { submissionsDeleted, invoicesDeleted })
+    info('Purged records older than two years', { submissionsDeleted, invoicesDeleted, quotationsDeleted })
   },
 )

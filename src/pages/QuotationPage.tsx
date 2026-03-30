@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import letterheadUrl from '../assets/Quotation.jpg'
 import { QuotationTemplate } from '../components/quotation/QuotationTemplate'
 import { SubmissionPrintDocumentShell } from '../components/submission/SubmissionPrintView'
@@ -14,11 +14,14 @@ import {
   downloadOrderAndLetterheadDocumentPdf,
 } from '../lib/exportSubmission'
 import { printOrderDocument } from '../lib/printOrderDocument'
+import { useQuotationsStore } from '../store/useQuotationsStore'
 import { useSubmissionsStore } from '../store/useSubmissionsStore'
 import type { SurveyFormData } from '../types/survey'
 import {
   createEmptyLineItem,
+  type QuotationFormData,
   type QuotationLineItem,
+  type QuotationRecord,
 } from '../types/quotation'
 
 const DEFAULT_INTRO =
@@ -61,8 +64,16 @@ function buildLineFromSubmission(data: SurveyFormData): QuotationLineItem {
 
 export function QuotationPage() {
   const { submissionId } = useParams<{ submissionId: string }>()
+  const navigate = useNavigate()
   const submissions = useSubmissionsStore((s) => s.submissions)
+  const submissionsReady = useSubmissionsStore((s) => s.firestoreReady)
   const submission = submissionId ? submissions.find((s) => s.id === submissionId) : undefined
+  const savedQuotation = useQuotationsStore((s) =>
+    submissionId ? s.quotations.find((q) => q.id === submissionId) : undefined,
+  )
+  const firestoreReady = useQuotationsStore((s) => s.firestoreReady)
+  const quotationsFirestoreError = useQuotationsStore((s) => s.firestoreError)
+  const saveQuotationToStore = useQuotationsStore((s) => s.saveQuotation)
 
   const [quotationDate, setQuotationDate] = useState(todayIsoDate)
   const [customerAddress, setCustomerAddress] = useState('')
@@ -73,7 +84,7 @@ export function QuotationPage() {
   const [closingNote, setClosingNote] = useState(DEFAULT_CLOSING)
   const [signatoryLine, setSignatoryLine] = useState('MAW PRINTING')
   const [signatoryName, setSignatoryName] = useState('M. A. W. Priyadarshana')
-  const [didPrefill, setDidPrefill] = useState(false)
+  const [saving, setSaving] = useState(false)
   const surveyCaptureRef = useRef<HTMLDivElement>(null)
   const quotationCaptureRef = useRef<HTMLDivElement>(null)
   const toastTimerRef = useRef<number>(0)
@@ -82,6 +93,8 @@ export function QuotationPage() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(
     null,
   )
+  const appliedSavedSig = useRef<string | null>(null)
+  const hydratedSubmissionKey = useRef<string | null>(null)
 
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
     window.clearTimeout(toastTimerRef.current)
@@ -91,16 +104,75 @@ export function QuotationPage() {
     }, 3500)
   }, [])
 
-  useEffect(() => {
-    if (!submission || didPrefill) return
-    const d = submission.data
-    setQuotationDate(d.orderDate?.trim() || todayIsoDate())
-    setCustomerAddress(d.address?.trim() || '')
-    const subj = [d.printType, d.orderName].filter(Boolean).join(' – ')
+  const resetFormToDefaults = useCallback(() => {
+    setQuotationDate(todayIsoDate())
+    setCustomerAddress('')
+    setSubject('')
+    setIntroText(DEFAULT_INTRO)
+    setLineItems([createEmptyLineItem()])
+    setPaymentNote(DEFAULT_PAYMENT)
+    setClosingNote(DEFAULT_CLOSING)
+    setSignatoryLine('MAW PRINTING')
+    setSignatoryName('M. A. W. Priyadarshana')
+  }, [])
+
+  const hydrateFromRecord = useCallback((record: QuotationRecord) => {
+    const d = record.data
+    setQuotationDate(d.quotationDate?.trim() || todayIsoDate())
+    setCustomerAddress(d.customerAddress ?? '')
+    setSubject(d.subject ?? '')
+    setIntroText(d.introText?.trim() ? d.introText : DEFAULT_INTRO)
+    setLineItems(d.lineItems?.length ? d.lineItems : [createEmptyLineItem()])
+    setPaymentNote(d.paymentNote?.trim() ? d.paymentNote : DEFAULT_PAYMENT)
+    setClosingNote(d.closingNote?.trim() ? d.closingNote : DEFAULT_CLOSING)
+    setSignatoryLine(d.signatoryLine?.trim() ? d.signatoryLine : 'MAW PRINTING')
+    setSignatoryName(d.signatoryName?.trim() ? d.signatoryName : 'M. A. W. Priyadarshana')
+  }, [])
+
+  const hydrateFromSubmission = useCallback((data: SurveyFormData) => {
+    setQuotationDate(data.orderDate?.trim() || todayIsoDate())
+    setCustomerAddress(data.address?.trim() || '')
+    const subj = [data.printType, data.orderName].filter(Boolean).join(' – ')
     setSubject(subj ? subj.toUpperCase() : 'ITEMS')
-    setLineItems([buildLineFromSubmission(d)])
-    setDidPrefill(true)
-  }, [submission, didPrefill])
+    setLineItems([buildLineFromSubmission(data)])
+  }, [])
+
+  useEffect(() => {
+    if (!submissionId) {
+      appliedSavedSig.current = null
+      hydratedSubmissionKey.current = null
+      resetFormToDefaults()
+      return
+    }
+
+    if (savedQuotation) {
+      hydratedSubmissionKey.current = null
+      const sig = `${savedQuotation.id}:${savedQuotation.updatedAt}`
+      if (appliedSavedSig.current !== sig) {
+        hydrateFromRecord(savedQuotation)
+        appliedSavedSig.current = sig
+      }
+      return
+    }
+
+    appliedSavedSig.current = null
+    if (submission) {
+      if (hydratedSubmissionKey.current !== submissionId) {
+        hydrateFromSubmission(submission.data)
+        hydratedSubmissionKey.current = submissionId
+      }
+      return
+    }
+
+    hydratedSubmissionKey.current = null
+  }, [
+    submissionId,
+    savedQuotation,
+    submission,
+    resetFormToDefaults,
+    hydrateFromRecord,
+    hydrateFromSubmission,
+  ])
 
   const addRow = useCallback(() => {
     setLineItems((rows) => [...rows, createEmptyLineItem()])
@@ -124,6 +196,50 @@ export function QuotationPage() {
     const id = submissionId ? `-${submissionId.slice(0, 8)}` : ''
     return `quotation-${date}-${subj}${id}`
   }, [quotationDate, subject, submissionId])
+
+  const buildFormData = useCallback((): QuotationFormData => {
+    return {
+      quotationDate,
+      customerAddress,
+      subject,
+      introText,
+      lineItems,
+      paymentNote,
+      closingNote,
+      signatoryLine,
+      signatoryName,
+    }
+  }, [
+    quotationDate,
+    customerAddress,
+    subject,
+    introText,
+    lineItems,
+    paymentNote,
+    closingNote,
+    signatoryLine,
+    signatoryName,
+  ])
+
+  const handleSave = useCallback(async () => {
+    setSaving(true)
+    try {
+      const data = buildFormData()
+      const id = await saveQuotationToStore({
+        id: submissionId,
+        submissionId: submission?.id ?? null,
+        data,
+      })
+      if (!submissionId) {
+        navigate(`/quotation/${id}`, { replace: true })
+      }
+      showToast('Quotation saved.', 'success')
+    } catch {
+      showToast('Could not save quotation. Deploy Firestore rules and check your connection.', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }, [buildFormData, navigate, saveQuotationToStore, showToast, submission?.id, submissionId])
 
   const handleDownloadPdf = useCallback(async () => {
     const qEl = quotationCaptureRef.current
@@ -172,8 +288,11 @@ export function QuotationPage() {
 
   const missingSubmission = useMemo(() => {
     if (!submissionId) return false
-    return !submission
-  }, [submissionId, submission])
+    if (!firestoreReady || !submissionsReady) return false
+    if (savedQuotation) return false
+    if (submission) return false
+    return true
+  }, [submissionId, firestoreReady, submissionsReady, savedQuotation, submission])
 
   if (missingSubmission) {
     return (
@@ -196,6 +315,9 @@ export function QuotationPage() {
             ← {submissionId ? 'Quotations' : 'Dashboard'}
           </Link>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Quotation</h1>
+          {quotationsFirestoreError ? (
+            <p className="mt-2 text-sm text-red-600">{quotationsFirestoreError}</p>
+          ) : null}
           <p className="mt-1 text-sm text-slate-600">
             {submission
               ? 'Download PDF matches Print: A4, page 1 order summary, page 2 quotation. The order block is off-screen but included. Or use Print / copy image.'
@@ -203,6 +325,9 @@ export function QuotationPage() {
           </p>
         </div>
         <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:min-w-[220px]">
+          <Button type="button" className="w-full py-3 shadow-md" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : 'Save quotation'}
+          </Button>
           <Button
             type="button"
             className="w-full py-3 shadow-md"

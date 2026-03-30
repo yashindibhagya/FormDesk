@@ -16,6 +16,31 @@ export type QuotationDraft = {
   signatoryName: string
 }
 
+export type QuotationFormData = QuotationDraft & {
+  introText: string
+}
+
+export const EMPTY_QUOTATION_FORM: QuotationFormData = {
+  quotationDate: '',
+  customerAddress: '',
+  subject: '',
+  introText: '',
+  lineItems: [],
+  paymentNote: '',
+  closingNote: '',
+  signatoryLine: '',
+  signatoryName: '',
+}
+
+export type QuotationRecord = {
+  id: string
+  createdAt: string
+  updatedAt: string
+  financialYear: string
+  submissionId: string | null
+  data: QuotationFormData
+}
+
 export function createEmptyLineItem(): QuotationLineItem {
   return {
     id: crypto.randomUUID(),
@@ -23,6 +48,11 @@ export function createEmptyLineItem(): QuotationLineItem {
     qty: '',
     unitPrice: '',
   }
+}
+
+export function ensureLineItems(rows: QuotationLineItem[] | undefined): QuotationLineItem[] {
+  if (rows?.length) return rows
+  return [createEmptyLineItem()]
 }
 
 /** Parse money/qty; strips commas and trailing `/=` (common on LK invoices). */
