@@ -92,6 +92,12 @@ export async function saveInvoiceToFirestore(record: InvoiceRecord): Promise<voi
   const createdAt = Number.isNaN(createdAtMs) ? Timestamp.now() : Timestamp.fromDate(new Date(createdAtMs))
   const updatedAt = Number.isNaN(updatedAtMs) ? Timestamp.now() : Timestamp.fromDate(new Date(updatedAtMs))
   const financialYear = record.financialYear?.trim() || getFinancialYearLabel(createdAt.toDate())
+  const persistedData = {
+    invoiceDate: record.data.invoiceDate,
+    customerAddress: record.data.customerAddress,
+    advance: record.data.advance,
+    lineItems: ensureLineItems(record.data.lineItems),
+  }
   await setDoc(
     doc(firebaseDb, COLL, record.id),
     {
@@ -99,7 +105,7 @@ export async function saveInvoiceToFirestore(record: InvoiceRecord): Promise<voi
       updatedAt,
       financialYear,
       submissionId: record.submissionId,
-      data: record.data,
+      data: persistedData,
     },
     { merge: true },
   )
