@@ -4,13 +4,13 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
+import { getCurrentFinancialYearLabel, isWithinLastNDays } from '../lib/financialYear'
 import { firebaseDb } from '../lib/firebase'
 import { formatDateTimeDotDMY } from '../lib/dateDisplay'
 import { useQuotationsStore } from '../store/useQuotationsStore'
 import { useSubmissionsStore } from '../store/useSubmissionsStore'
 
 const PRINT_TYPE_OPTIONS = ['All', 'Embroidery', 'Sublimation', 'Screen Print', 'Sticker']
-
 export function QuotationsListPage() {
   const submissions = useSubmissionsStore((s) => s.submissions)
   const deleteSubmission = useSubmissionsStore((s) => s.deleteSubmission)
@@ -21,6 +21,8 @@ export function QuotationsListPage() {
   const quotationsError = useQuotationsStore((s) => s.firestoreError)
   const [query, setQuery] = useState('')
   const [printType, setPrintType] = useState('All')
+  const [timeFilter, setTimeFilter] = useState('all')
+  const currentFinancialYear = useMemo(() => getCurrentFinancialYearLabel(), [])
 
   const quotationSubmissions = useMemo(() => {
     const byId = new Map(submissions.map((s) => [s.id, s] as const))
@@ -44,6 +46,14 @@ export function QuotationsListPage() {
     })
   }, [quotationSubmissions])
 
+  const financialYearOptions = useMemo(() => {
+    const years = new Set<string>()
+    for (const s of uniqueQuotationSubmissions) {
+      if (s.financialYear?.trim()) years.add(s.financialYear)
+    }
+    return Array.from(years).sort((a, b) => b.localeCompare(a))
+  }, [uniqueQuotationSubmissions])
+
   const filtered = useMemo(() => {
     let list = uniqueQuotationSubmissions
     const q = query.trim().toLowerCase()
@@ -59,8 +69,16 @@ export function QuotationsListPage() {
     if (printType !== 'All') {
       list = list.filter((s) => s.data.printType.toLowerCase().includes(printType.toLowerCase()))
     }
+    if (timeFilter === 'last7days') {
+      list = list.filter((s) => isWithinLastNDays(s.createdAt, 7))
+    } else if (timeFilter === 'previousFy') {
+      list = list.filter((s) => s.financialYear !== currentFinancialYear)
+    } else if (timeFilter.startsWith('fy:')) {
+      const year = timeFilter.slice(3)
+      list = list.filter((s) => s.financialYear === year)
+    }
     return list
-  }, [uniqueQuotationSubmissions, query, printType])
+  }, [uniqueQuotationSubmissions, query, printType, timeFilter, currentFinancialYear])
 
   if (firebaseDb && (!submissionsReady || !quotationsReady)) {
     return (
@@ -98,7 +116,7 @@ export function QuotationsListPage() {
       </div>
 
       <Card padding="sm" className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2">
             <label htmlFor="q-search" className="mb-1 block text-xs font-medium text-slate-500">
               Search
@@ -120,6 +138,24 @@ export function QuotationsListPage() {
                   {o}
                 </option>
               ))}
+            </Select>
+          </div>
+          <div>
+            <label htmlFor="q-filter-time" className="mb-1 block text-xs font-medium text-slate-500">
+              Time range
+            </label>
+            <Select id="q-filter-time" value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)}>
+              <option value="all">All records</option>
+              <option value="last7days">Last 7 days</option>
+              <option value="previousFy">Previous financial years</option>
+              <option value={`fy:${currentFinancialYear}`}>Current financial year ({currentFinancialYear})</option>
+              {financialYearOptions
+                .filter((year) => year !== currentFinancialYear)
+                .map((year) => (
+                  <option key={year} value={`fy:${year}`}>
+                    Previous FY ({year})
+                  </option>
+                ))}
             </Select>
           </div>
         </div>

@@ -6,13 +6,13 @@ import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { formatDateDotDMY, formatDateTimeDotDMY } from '../lib/dateDisplay'
 import { firebaseDb } from '../lib/firebase'
+import { getCurrentFinancialYearLabel, isWithinLastNDays } from '../lib/financialYear'
 import { useInvoicesStore } from '../store/useInvoicesStore'
 import { useSubmissionsStore } from '../store/useSubmissionsStore'
 import type { InvoiceRecord } from '../types/invoice'
 import type { Submission } from '../types/survey'
 
 const PRINT_TYPE_OPTIONS = ['All', 'Embroidery', 'Sublimation', 'Screen Print', 'Sticker']
-
 function cardLines(inv: InvoiceRecord, submissionById: Map<string, Submission>) {
   const sub = inv.submissionId ? submissionById.get(inv.submissionId) : undefined
   if (sub) {
@@ -42,6 +42,16 @@ export function InvoicesListPage() {
   const submissions = useSubmissionsStore((s) => s.submissions)
   const [query, setQuery] = useState('')
   const [printType, setPrintType] = useState('All')
+  const [timeFilter, setTimeFilter] = useState('all')
+  const currentFinancialYear = useMemo(() => getCurrentFinancialYearLabel(), [])
+
+  const financialYearOptions = useMemo(() => {
+    const years = new Set<string>()
+    for (const inv of invoices) {
+      if (inv.financialYear?.trim()) years.add(inv.financialYear)
+    }
+    return Array.from(years).sort((a, b) => b.localeCompare(a))
+  }, [invoices])
 
   const submissionById = useMemo(() => {
     const m = new Map<string, (typeof submissions)[0]>()
@@ -75,9 +85,17 @@ export function InvoicesListPage() {
         return sub?.data.printType.toLowerCase().includes(printType.toLowerCase())
       })
     }
+    if (timeFilter === 'last7days') {
+      list = list.filter((inv) => isWithinLastNDays(inv.updatedAt, 7))
+    } else if (timeFilter === 'previousFy') {
+      list = list.filter((inv) => inv.financialYear !== currentFinancialYear)
+    } else if (timeFilter.startsWith('fy:')) {
+      const year = timeFilter.slice(3)
+      list = list.filter((inv) => inv.financialYear === year)
+    }
     list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     return list
-  }, [invoices, submissionById, query, printType])
+  }, [invoices, submissionById, query, printType, timeFilter, currentFinancialYear])
 
   if (firebaseDb && !firestoreReady) {
     return (
@@ -110,7 +128,7 @@ export function InvoicesListPage() {
       </div>
 
       <Card padding="sm" className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2">
             <label htmlFor="inv-search" className="mb-1 block text-xs font-medium text-slate-500">
               Search
@@ -132,6 +150,24 @@ export function InvoicesListPage() {
                   {o}
                 </option>
               ))}
+            </Select>
+          </div>
+          <div>
+            <label htmlFor="inv-filter-time" className="mb-1 block text-xs font-medium text-slate-500">
+              Time range
+            </label>
+            <Select id="inv-filter-time" value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)}>
+              <option value="all">All records</option>
+              <option value="last7days">Last 7 days</option>
+              <option value="previousFy">Previous financial years</option>
+              <option value={`fy:${currentFinancialYear}`}>Current financial year ({currentFinancialYear})</option>
+              {financialYearOptions
+                .filter((year) => year !== currentFinancialYear)
+                .map((year) => (
+                  <option key={year} value={`fy:${year}`}>
+                    Previous FY ({year})
+                  </option>
+                ))}
             </Select>
           </div>
         </div>
