@@ -317,25 +317,25 @@ export function InvoicePage() {
               : 'With no linked order, the PDF is only the invoice sheet. Link from an order to include the order confirmation on page 1.'}
           </p>
         </div>
-        <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:min-w-[220px]">
-          <Button type="button" className="w-full py-3 shadow-md" onClick={handleSave} disabled={saving}>
+        <div className="grid w-full max-w-md shrink-0 grid-cols-2 gap-2 sm:w-auto sm:min-w-[320px]">
+          <Button type="button" className="w-full py-2.5 text-sm shadow-md" onClick={handleSave} disabled={saving}>
             {saving ? 'Saving…' : 'Save invoice'}
           </Button>
           <Button
             type="button"
-            className="w-full py-3 shadow-md"
+            className="w-full py-2.5 text-sm shadow-md"
             onClick={() => void handleDownloadPdf()}
             disabled={downloadingPdf}
           >
             {downloadingPdf ? 'Creating PDF…' : 'Download PDF'}
           </Button>
-          <Button type="button" variant="secondary" className="w-full py-3" onClick={handlePrint}>
+          <Button type="button" variant="secondary" className="w-full py-2.5 text-sm" onClick={handlePrint}>
             Print
           </Button>
           <Button
             type="button"
             variant="secondary"
-            className="w-full py-3"
+            className="w-full py-2.5 text-sm"
             onClick={handleCopyImage}
             disabled={copiedImage || downloadingPdf}
           >

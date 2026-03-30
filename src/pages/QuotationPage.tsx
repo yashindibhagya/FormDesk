@@ -324,25 +324,25 @@ export function QuotationPage() {
               : 'Download PDF saves the quotation as A4. With a linked order, page 1 is the order and page 2 is the quotation.'}
           </p>
         </div>
-        <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:min-w-[220px]">
-          <Button type="button" className="w-full py-3 shadow-md" onClick={handleSave} disabled={saving}>
+        <div className="grid w-full max-w-md shrink-0 grid-cols-2 gap-2 sm:w-auto sm:min-w-[320px]">
+          <Button type="button" className="w-full py-2.5 text-sm shadow-md" onClick={handleSave} disabled={saving}>
             {saving ? 'Saving…' : 'Save quotation'}
           </Button>
           <Button
             type="button"
-            className="w-full py-3 shadow-md"
+            className="w-full py-2.5 text-sm shadow-md"
             onClick={() => void handleDownloadPdf()}
             disabled={downloadingPdf}
           >
             {downloadingPdf ? 'Creating PDF…' : 'Download PDF'}
           </Button>
-          <Button type="button" variant="secondary" className="w-full py-3" onClick={handlePrint}>
+          <Button type="button" variant="secondary" className="w-full py-2.5 text-sm" onClick={handlePrint}>
             Print
           </Button>
           <Button
             type="button"
             variant="secondary"
-            className="w-full py-3"
+            className="w-full py-2.5 text-sm"
             onClick={handleCopyImage}
             disabled={copiedImage}
           >
