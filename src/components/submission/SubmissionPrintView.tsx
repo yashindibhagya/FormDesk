@@ -32,6 +32,14 @@ function getSewingLayout(widthRaw: string, heightRaw: string): {
   return { aspectRatio: Math.min(Math.max(landscapeRatio, 1), 12 / 5) }
 }
 
+/** Sewing corner bands: append " pocket" for display (red in UI). Skip if value already ends with "pocket". */
+function sewCornerPocketDisplay(raw: string | undefined): string {
+  const t = raw?.trim() ?? ''
+  if (!t) return ''
+  if (/pocket$/i.test(t)) return t
+  return `${t} (pocket)`
+}
+
 export type SubmissionPrintDocumentShellProps = {
   submission: Submission
   /** For screenshot PDF / copy-image capture on the submission detail page */
@@ -90,6 +98,8 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
 
   const fabricBodyRowRef = useRef<HTMLDivElement>(null)
   const [fabricBodyHeightPx, setFabricBodyHeightPx] = useState(0)
+  const sideSewStripRef = useRef<HTMLDivElement>(null)
+  const [sideSewStripHeightPx, setSideSewStripHeightPx] = useState(0)
 
   useLayoutEffect(() => {
     if (!data.sewYes) {
@@ -106,6 +116,30 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
     ro.observe(el)
     return () => ro.disconnect()
   }, [data.sewYes, sewingLayout.aspectRatio, sewingLayout.maxWidthPx, data.sizeWidth, data.sizeHeight])
+
+  useLayoutEffect(() => {
+    if (!data.sewYes || (!data.sewCornerLeftText?.trim() && !data.sewCornerRightText?.trim())) {
+      setSideSewStripHeightPx(0)
+      return
+    }
+    const el = sideSewStripRef.current
+    if (!el) return
+    const update = () => {
+      setSideSewStripHeightPx(Math.max(32, Math.round(el.getBoundingClientRect().height)))
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [
+    data.sewYes,
+    data.sewCornerLeftText,
+    data.sewCornerRightText,
+    data.sewCornerTopText,
+    data.sewCornerBottomText,
+    sewingLayout.aspectRatio,
+    sewingLayout.maxWidthPx,
+  ])
 
   const sewEdgeBandPct = 14
   const sewInsetTopPct = data.sewCornerTopText?.trim() ? sewEdgeBandPct : 5
@@ -298,44 +332,86 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
 
                     {data.sewCornerTopText?.trim() ? (
                       <div
-                        className="absolute top-0 flex items-stretch justify-center gap-2 border border-slate-400 bg-white px-2 py-2 text-slate-600"
+                        className="absolute top-0 flex items-stretch justify-center gap-2 border border-slate-400 bg-white px-2 py-2"
                         style={{ left: `${sewEdgeBandPct}%`, right: `${sewEdgeBandPct}%`, height: `${sewEdgeBandPct}%` }}
                       >
                         <span className="w-px shrink-0 self-stretch bg-slate-300" />
-                        <span className="flex items-center text-xs font-medium leading-none">{data.sewCornerTopText}</span>
+                        <span className="flex items-center text-xs font-medium leading-none text-red-600">
+                          {sewCornerPocketDisplay(data.sewCornerTopText)}
+                        </span>
                         <span className="w-px shrink-0 self-stretch bg-slate-300" />
                       </div>
                     ) : null}
 
                     {data.sewCornerLeftText?.trim() ? (
                       <div
-                        className="absolute left-0 flex flex-col items-center justify-center gap-1.5 border border-slate-400 bg-white px-1 py-2 text-slate-600"
+                        ref={sideSewStripRef}
+                        className="absolute left-0 flex items-center justify-center overflow-visible border border-slate-400 bg-white px-0 py-0"
                         style={{ ...sewSideStripStyle, width: `${sewEdgeBandPct}%` }}
                       >
-                        <span className="h-px w-full max-w-[90%] bg-slate-300" />
-                        <span className="text-xs font-medium leading-none">{data.sewCornerLeftText}</span>
-                        <span className="h-px w-full max-w-[90%] bg-slate-300" />
+                        <div
+                          className="flex origin-center -rotate-90 flex-row items-center gap-1 whitespace-nowrap"
+                          style={{
+                            width:
+                              sideSewStripHeightPx > 0
+                                ? `${sideSewStripHeightPx}px`
+                                : fabricBodyHeightPx > 0
+                                  ? `${fabricBodyHeightPx}px`
+                                  : '6rem',
+                          }}
+                        >
+                          <div className="flex min-h-px min-w-6 flex-1 basis-0 items-center sm:min-w-8">
+                            <span className="h-px w-full bg-slate-300" />
+                          </div>
+                          <span className="shrink-0 text-[9px] font-medium leading-none text-red-600">
+                            {sewCornerPocketDisplay(data.sewCornerLeftText)}
+                          </span>
+                          <div className="flex min-h-px min-w-6 flex-1 basis-0 items-center sm:min-w-8">
+                            <span className="h-px w-full bg-slate-300" />
+                          </div>
+                        </div>
                       </div>
                     ) : null}
 
                     {data.sewCornerRightText?.trim() ? (
                       <div
-                        className="absolute right-0 flex flex-col items-center justify-center gap-1.5 border border-slate-400 bg-white px-1 py-2 text-slate-600"
+                        ref={data.sewCornerLeftText?.trim() ? undefined : sideSewStripRef}
+                        className="absolute right-0 flex items-center justify-center overflow-visible border border-slate-400 bg-white px-0 py-0"
                         style={{ ...sewSideStripStyle, width: `${sewEdgeBandPct}%` }}
                       >
-                        <span className="h-px w-full max-w-[90%] bg-slate-300" />
-                        <span className="text-xs font-medium leading-none">{data.sewCornerRightText}</span>
-                        <span className="h-px w-full max-w-[90%] bg-slate-300" />
+                        <div
+                          className="flex origin-center rotate-90 flex-row items-center gap-1 whitespace-nowrap"
+                          style={{
+                            width:
+                              sideSewStripHeightPx > 0
+                                ? `${sideSewStripHeightPx}px`
+                                : fabricBodyHeightPx > 0
+                                  ? `${fabricBodyHeightPx}px`
+                                  : '6rem',
+                          }}
+                        >
+                          <div className="flex min-h-px min-w-6 flex-1 basis-0 items-center sm:min-w-8">
+                            <span className="h-px w-full bg-slate-300" />
+                          </div>
+                          <span className="shrink-0 text-[9px] font-medium leading-none text-red-600">
+                            {sewCornerPocketDisplay(data.sewCornerRightText)}
+                          </span>
+                          <div className="flex min-h-px min-w-6 flex-1 basis-0 items-center sm:min-w-8">
+                            <span className="h-px w-full bg-slate-300" />
+                          </div>
+                        </div>
                       </div>
                     ) : null}
 
                     {data.sewCornerBottomText?.trim() ? (
                       <div
-                        className="absolute bottom-0 flex items-stretch justify-center gap-2 border border-slate-400 bg-white px-2 py-2 text-slate-600"
+                        className="absolute bottom-0 flex items-stretch justify-center gap-2 border border-slate-400 bg-white px-2 py-2"
                         style={{ left: `${sewEdgeBandPct}%`, right: `${sewEdgeBandPct}%`, height: `${sewEdgeBandPct}%` }}
                       >
                         <span className="w-px shrink-0 self-stretch bg-slate-300" />
-                        <span className="flex items-center text-xs font-medium leading-none">{data.sewCornerBottomText}</span>
+                        <span className="flex items-center text-xs font-medium leading-none text-red-600">
+                          {sewCornerPocketDisplay(data.sewCornerBottomText)}
+                        </span>
                         <span className="w-px shrink-0 self-stretch bg-slate-300" />
                       </div>
                     ) : null}

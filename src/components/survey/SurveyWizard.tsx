@@ -70,6 +70,13 @@ function getSewingLayout(widthRaw: string, heightRaw: string): {
   return { aspectRatio: Math.min(Math.max(landscapeRatio, 1), 12 / 5) }
 }
 
+function sewCornerPocketDisplay(raw: string | undefined): string {
+  const t = raw?.trim() ?? ''
+  if (!t) return ''
+  if (/pocket$/i.test(t)) return t
+  return `${t} pocket`
+}
+
 function buildInitialValues(values?: SurveyFormData): SurveyFormData {
   const base = { ...EMPTY_SURVEY, ...(values ?? {}) }
   const isPreset = FABRIC_OPTIONS.some(
@@ -114,6 +121,8 @@ export function SurveyWizard({
   const [isEditingBottomSize, setIsEditingBottomSize] = useState(false)
   const fabricBodyRowRef = useRef<HTMLDivElement>(null)
   const [fabricBodyHeightPx, setFabricBodyHeightPx] = useState(0)
+  const sideSewStripRef = useRef<HTMLButtonElement | null>(null)
+  const [sideSewStripHeightPx, setSideSewStripHeightPx] = useState(0)
   const defaultValues = useMemo(
     () => buildInitialValues(initialValues ?? initialDraft?.values),
     [initialValues, initialDraft?.values],
@@ -163,6 +172,32 @@ export function SurveyWizard({
     ro.observe(el)
     return () => ro.disconnect()
   }, [values.sewYes, sewingLayout.aspectRatio, sewingLayout.maxWidthPx, values.sizeWidth, values.sizeHeight])
+
+  useLayoutEffect(() => {
+    if (!values.sewYes || (!values.sewCornerLeftText?.trim() && !values.sewCornerRightText?.trim())) {
+      setSideSewStripHeightPx(0)
+      return
+    }
+    const el = sideSewStripRef.current
+    if (!el) return
+    const update = () => {
+      setSideSewStripHeightPx(Math.max(32, Math.round(el.getBoundingClientRect().height)))
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [
+    values.sewYes,
+    values.sewCornerLeftText,
+    values.sewCornerRightText,
+    values.sewCornerTopText,
+    values.sewCornerBottomText,
+    sewingLayout.aspectRatio,
+    sewingLayout.maxWidthPx,
+    isEditingLeftSize,
+    isEditingRightSize,
+  ])
 
   useEffect(() => {
     if (mode !== 'create') return
@@ -222,10 +257,10 @@ export function SurveyWizard({
     async (field: DesignImageKey, event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0]
       if (!file) return
-      const isMain = field === 'designImage'
+      // Same dimensions/quality for all four design slots so saved previews match.
       const dataUrl = await fileToDataUrl(file, {
-        maxDimension: isMain ? 900 : 360,
-        quality: isMain ? 0.55 : 0.48,
+        maxDimension: 900,
+        quality: 0.55,
       })
       setValue(field, dataUrl, { shouldDirty: true, shouldTouch: true })
     },
@@ -529,12 +564,12 @@ export function SurveyWizard({
                   ) : (
                     <button
                       type="button"
-                      className="absolute left-14 right-14 top-0 flex h-10 items-stretch justify-center gap-3 border border-slate-600 bg-white px-6 py-2 text-slate-700"
+                      className="absolute left-14 right-14 top-0 flex h-10 items-stretch justify-center gap-3 border border-slate-600 bg-white px-6 py-2"
                       onClick={() => setIsEditingTopSize(true)}
                     >
                       <span className="w-px shrink-0 self-stretch bg-slate-600" />
-                      <span className="flex items-center font-semibold leading-none">
-                        {values.sewCornerTopText}
+                      <span className="flex items-center font-semibold leading-none text-red-600">
+                        {sewCornerPocketDisplay(values.sewCornerTopText)}
                       </span>
                       <span className="w-px shrink-0 self-stretch bg-slate-600" />
                     </button>
@@ -570,14 +605,35 @@ export function SurveyWizard({
                   ) : (
                     <button
                       type="button"
-                      className="absolute left-0 top-10 bottom-10 flex w-14 flex-col items-center justify-center gap-2 border border-slate-600 bg-white px-1 py-5 text-slate-700"
+                      ref={
+                        !isEditingLeftSize && values.sewCornerLeftText?.trim()
+                          ? sideSewStripRef
+                          : undefined
+                      }
+                      className="absolute left-0 top-10 bottom-10 flex w-14 items-center justify-center overflow-visible border border-slate-600 bg-white px-0 py-0"
                       onClick={() => setIsEditingLeftSize(true)}
                     >
-                      <span className="h-px w-full bg-slate-600" />
-                      <span className="font-semibold leading-none">
-                        {values.sewCornerLeftText}
-                      </span>
-                      <span className="h-px w-full bg-slate-600" />
+                      <div
+                        className="flex origin-center -rotate-90 flex-row items-center gap-1.5 whitespace-nowrap"
+                        style={{
+                          width:
+                            sideSewStripHeightPx > 0
+                              ? `${sideSewStripHeightPx}px`
+                              : fabricBodyHeightPx > 0
+                                ? `${fabricBodyHeightPx}px`
+                                : '7rem',
+                        }}
+                      >
+                        <div className="flex min-h-px min-w-10 flex-1 basis-0 items-center sm:min-w-14">
+                          <span className="h-px w-full bg-slate-600" />
+                        </div>
+                        <span className="shrink-0 text-[10px] font-semibold leading-none text-red-600">
+                          {sewCornerPocketDisplay(values.sewCornerLeftText)}
+                        </span>
+                        <div className="flex min-h-px min-w-10 flex-1 basis-0 items-center sm:min-w-14">
+                          <span className="h-px w-full bg-slate-600" />
+                        </div>
+                      </div>
                     </button>
                   )}
 
@@ -611,14 +667,37 @@ export function SurveyWizard({
                   ) : (
                     <button
                       type="button"
-                      className="absolute right-0 top-10 bottom-10 flex w-14 flex-col items-center justify-center gap-2 border border-slate-600 bg-white px-1 py-5 text-slate-700"
+                      ref={
+                        !isEditingRightSize &&
+                        values.sewCornerRightText?.trim() &&
+                        (isEditingLeftSize || !values.sewCornerLeftText?.trim())
+                          ? sideSewStripRef
+                          : undefined
+                      }
+                      className="absolute right-0 top-10 bottom-10 flex w-14 items-center justify-center overflow-visible border border-slate-600 bg-white px-0 py-0"
                       onClick={() => setIsEditingRightSize(true)}
                     >
-                      <span className="h-px w-full bg-slate-600" />
-                      <span className="font-semibold leading-none">
-                        {values.sewCornerRightText}
-                      </span>
-                      <span className="h-px w-full bg-slate-600" />
+                      <div
+                        className="flex origin-center rotate-90 flex-row items-center gap-1.5 whitespace-nowrap"
+                        style={{
+                          width:
+                            sideSewStripHeightPx > 0
+                              ? `${sideSewStripHeightPx}px`
+                              : fabricBodyHeightPx > 0
+                                ? `${fabricBodyHeightPx}px`
+                                : '7rem',
+                        }}
+                      >
+                        <div className="flex min-h-px min-w-10 flex-1 basis-0 items-center sm:min-w-14">
+                          <span className="h-px w-full bg-slate-600" />
+                        </div>
+                        <span className="shrink-0 text-[10px] font-semibold leading-none text-red-600">
+                          {sewCornerPocketDisplay(values.sewCornerRightText)}
+                        </span>
+                        <div className="flex min-h-px min-w-10 flex-1 basis-0 items-center sm:min-w-14">
+                          <span className="h-px w-full bg-slate-600" />
+                        </div>
+                      </div>
                     </button>
                   )}
 
@@ -652,12 +731,12 @@ export function SurveyWizard({
                   ) : (
                     <button
                       type="button"
-                      className="absolute left-14 right-14 bottom-0 flex h-10 items-stretch justify-center gap-3 border border-slate-600 bg-white px-6 py-2 text-slate-700"
+                      className="absolute left-14 right-14 bottom-0 flex h-10 items-stretch justify-center gap-3 border border-slate-600 bg-white px-6 py-2"
                       onClick={() => setIsEditingBottomSize(true)}
                     >
                       <span className="w-px shrink-0 self-stretch bg-slate-600" />
-                      <span className="flex items-center font-semibold leading-none">
-                        {values.sewCornerBottomText}
+                      <span className="flex items-center font-semibold leading-none text-red-600">
+                        {sewCornerPocketDisplay(values.sewCornerBottomText)}
                       </span>
                       <span className="w-px shrink-0 self-stretch bg-slate-600" />
                     </button>
@@ -717,23 +796,21 @@ function SectionCard({ title, children }: { title: string; children: ReactNode }
   )
 }
 
-/** Smaller JPEG for Firestore: main + 3 thumbs stay under quota and upload quickly. */
+/** JPEG recompress before Firestore — same max dimension/quality for every design slot so previews match. */
 async function shrinkSurveyImagesForSave(data: SurveyFormData): Promise<SurveyFormData> {
   const next = { ...data }
-  const compressOne = async (
-    key: 'designImage' | 'designThumb1' | 'designThumb2' | 'designThumb3',
-    maxDimension: number,
-    quality: number,
-  ) => {
+  const maxDimension = 720
+  const quality = 0.46
+  const compressOne = async (key: 'designImage' | 'designThumb1' | 'designThumb2' | 'designThumb3') => {
     const v = data[key]
     if (typeof v !== 'string' || !v.trim().startsWith('data:image')) return
     next[key] = await compressDataUrlToJpeg(v, maxDimension, quality)
   }
   await Promise.all([
-    compressOne('designImage', 720, 0.46),
-    compressOne('designThumb1', 280, 0.4),
-    compressOne('designThumb2', 280, 0.4),
-    compressOne('designThumb3', 280, 0.4),
+    compressOne('designImage'),
+    compressOne('designThumb1'),
+    compressOne('designThumb2'),
+    compressOne('designThumb3'),
   ])
   return next
 }
