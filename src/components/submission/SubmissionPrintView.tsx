@@ -77,8 +77,13 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
   const { data } = submission
   const created = formatDateTimeDotDMY(submission.createdAt)
   const sewingLayout = getSewingLayout(data.sizeWidth || '', data.sizeHeight || '')
-  const thumbImages = [data.designThumb1, data.designThumb2, data.designThumb3].filter(Boolean) as string[]
-  const hasAnyImage = !!data.designImage || thumbImages.length > 0
+  const designPreviewImages = [
+    data.designImage,
+    data.designThumb1,
+    data.designThumb2,
+    data.designThumb3,
+  ].filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+  const hasAnyImage = designPreviewImages.length > 0
 
   const fabricBodyRowRef = useRef<HTMLDivElement>(null)
   const [fabricBodyHeightPx, setFabricBodyHeightPx] = useState(0)
@@ -145,13 +150,11 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
         </div>
       )}
 
-      {/* ── Main grid: ~1/3 + 2/3; print + index.css @container printdoc match PDF capture to print ── */}
-      <div className="order-layout-grid grid grid-cols-1 gap-4">
+      {/* ── Main grid: row1 customer+schedule | print; row2 sewing | design (same row = aligned bottoms) ── */}
+      <div className="order-layout-grid grid grid-cols-1 gap-4 items-stretch">
 
-        {/* ── Left column ── */}
-        <div className="space-y-3">
-
-          {/* Customer & Job */}
+        {/* Row 1 col 1 — Customer & schedule */}
+        <div className="flex min-h-0 flex-col space-y-3">
           <SectionLabel>Customer &amp; job</SectionLabel>
           <InfoCard>
             <Field label="Job no" value={data.jobNo || '—'} />
@@ -161,7 +164,6 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
             <Field label="Address" value={data.address || '—'} />
           </InfoCard>
 
-          {/* Schedule */}
           <SectionLabel>Schedule</SectionLabel>
           <InfoCard>
             <Field label="Order date" value={formatDateDotDMY(data.orderDate) || '—'} />
@@ -179,10 +181,52 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
               )}
             </div>
           </InfoCard>
+        </div>
 
-          {/* Sewing */}
+        {/* Row 1 col 2 — Print */}
+        <div className="flex min-h-0 flex-col space-y-3">
+          <SectionLabel>Print specifications</SectionLabel>
+          <SpecCard title="Print" className="min-h-0 flex-1">
+            <SpecRow label="Fabric" value={data.fabric || '—'} />
+            {data.printType === 'Banner' ? (
+              <div className="flex items-center gap-2 border-b border-slate-100 py-2 last:border-b-0">
+                <span className="w-24 shrink-0 text-xs text-slate-500">Quantity</span>
+                <div className="grid flex-1 grid-cols-3 gap-2">
+                  <span className="flex min-h-[30px] items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
+                    Normal: {data.quantityNormal || '—'}
+                  </span>
+                  <span className="flex min-h-[30px] items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
+                    Left: {data.quantityLeft || '—'}
+                  </span>
+                  <span className="flex min-h-[30px] items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
+                    Right: {data.quantityRight || '—'}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <SpecRow label="Quantity" value={data.quantity || '—'} />
+            )}
+            <div className="flex items-center gap-2 border-b border-slate-100 py-2 last:border-b-0">
+              <span className="w-24 shrink-0 text-xs text-slate-500">Size</span>
+              <div className="flex flex-1 gap-2">
+                <span className="flex min-h-[30px] flex-1 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
+                  H: {data.sizeHeight || '—'}
+                </span>
+                <span className="flex min-h-[30px] flex-1 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
+                  W: {data.sizeWidth || '—'}
+                </span>
+              </div>
+            </div>
+            <SpecRow label="Method" value={data.method || '—'} />
+            <SpecRow label="Type" value={data.printType || '—'} />
+            <SpecRow label="Description" value={data.printDescription || '—'} />
+          </SpecCard>
+        </div>
+
+        {/* Row 2 col 1 — Sewing (stretches with design column) */}
+        <div className="flex min-h-0 flex-col space-y-3">
           <SectionLabel>Sewing</SectionLabel>
-          <SpecCard title="Sewing instructions">
+          <SpecCard title="Sewing instructions" className="min-h-0 flex-1">
             {data.sewYes ? (
               <>
                 <div className="mb-2 flex items-center gap-2 print:mb-1">
@@ -193,7 +237,7 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                     Sewing required
                   </span>
                 </div>
-                <div className="rounded-lg bg-slate-50 px-2 py-1.5 print:px-1.5 print:py-1">
+                <div className="flex flex-1 flex-col rounded-lg bg-slate-50 px-2 py-1.5 print:px-1.5 print:py-1">
                   <div
                     className="relative mx-auto w-full max-w-[210px] print:max-w-[210px]"
                     style={{
@@ -201,7 +245,6 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                       maxWidth: sewingLayout.maxWidthPx ? `${sewingLayout.maxWidthPx}px` : undefined,
                     }}
                   >
-                    {/* Inner fabric: edge insets reserve the same band thickness for top/bottom and left/right labels */}
                     <div
                       className="absolute flex min-h-0 flex-col overflow-hidden border border-slate-300 bg-slate-300"
                       style={sewDiagramInsetStyle}
@@ -250,7 +293,6 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                       </div>
                     </div>
 
-                    {/* Top */}
                     {data.sewCornerTopText?.trim() ? (
                       <div
                         className="absolute top-0 flex items-stretch justify-center gap-2 border border-slate-400 bg-white px-2 py-2 text-slate-600"
@@ -262,7 +304,6 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                       </div>
                     ) : null}
 
-                    {/* Left */}
                     {data.sewCornerLeftText?.trim() ? (
                       <div
                         className="absolute left-0 flex flex-col items-center justify-center gap-1.5 border border-slate-400 bg-white px-1 py-2 text-slate-600"
@@ -274,7 +315,6 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                       </div>
                     ) : null}
 
-                    {/* Right */}
                     {data.sewCornerRightText?.trim() ? (
                       <div
                         className="absolute right-0 flex flex-col items-center justify-center gap-1.5 border border-slate-400 bg-white px-1 py-2 text-slate-600"
@@ -286,7 +326,6 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                       </div>
                     ) : null}
 
-                    {/* Bottom */}
                     {data.sewCornerBottomText?.trim() ? (
                       <div
                         className="absolute bottom-0 flex items-stretch justify-center gap-2 border border-slate-400 bg-white px-2 py-2 text-slate-600"
@@ -310,87 +349,46 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
           </SpecCard>
         </div>
 
-        {/* ── Right column ── */}
-        <div className="space-y-3">
-
-          {/* Print specs */}
-          <SectionLabel>Print specifications</SectionLabel>
-          <SpecCard title="Print">
-            <SpecRow label="Fabric" value={data.fabric || '—'} />
-            {data.printType === 'Banner' ? (
-              <div className="flex items-center gap-2 border-b border-slate-100 py-2 last:border-b-0">
-                <span className="w-24 shrink-0 text-xs text-slate-500">Quantity</span>
-                <div className="grid flex-1 grid-cols-3 gap-2">
-                  <span className="flex min-h-[30px] items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
-                    Normal: {data.quantityNormal || '—'}
-                  </span>
-                  <span className="flex min-h-[30px] items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
-                    Left: {data.quantityLeft || '—'}
-                  </span>
-                  <span className="flex min-h-[30px] items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
-                    Right: {data.quantityRight || '—'}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <SpecRow label="Quantity" value={data.quantity || '—'} />
-            )}
-            <div className="flex items-center gap-2 border-b border-slate-100 py-2 last:border-b-0">
-              <span className="w-24 shrink-0 text-xs text-slate-500">Size</span>
-              <div className="flex flex-1 gap-2">
-                <span className="flex min-h-[30px] flex-1 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
-                  H: {data.sizeHeight || '—'}
-                </span>
-                <span className="flex min-h-[30px] flex-1 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-[#042C53]">
-                  W: {data.sizeWidth || '—'}
-                </span>
-              </div>
-            </div>
-            <SpecRow label="Method" value={data.method || '—'} />
-            <SpecRow label="Type" value={data.printType || '—'} />
-            <SpecRow label="Description" value={data.printDescription || '—'} />
-          </SpecCard>
-
-          {/* Design images */}
-          {hasAnyImage && (
+        {/* Row 2 col 2 — Design previews (same row as sewing = shared bottom edge) */}
+        <div className="flex min-h-0 flex-col space-y-3">
+          {hasAnyImage ? (
             <>
               <SectionLabel>Design previews</SectionLabel>
-              <InfoCard className="overflow-hidden min-h-[520px]">
-                {data.designImage && (
-                  <img
-                    src={data.designImage}
-                    alt="Design preview"
-                    className="w-full h-[450px] object-contain object-center rounded-lg mb-2 bg-slate-50"
-                  />
-                )}
-                {thumbImages.length > 0 && (
-                  <div className={`grid grid-cols-3 gap-1.5 ${data.designImage ? 'mt-2' : ''}`}>
-                    {thumbImages.map((src, idx) => (
+              <InfoCard className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <div
+                  className={`grid flex-1 gap-2 ${designPreviewImages.length >= 3 ? 'grid-cols-2' : designPreviewImages.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}
+                >
+                  {designPreviewImages.map((src, idx) => (
+                    <div
+                      key={`preview-${idx}`}
+                      className="flex aspect-square min-h-[7.5rem] items-center justify-center rounded-lg border border-slate-100 bg-slate-50 p-1 sm:min-h-[8.5rem]"
+                    >
                       <img
-                        key={`${src}-${idx}`}
                         src={src}
-                        alt={`Design thumbnail ${idx + 1}`}
-                        className="h-24 w-full rounded-md object-contain object-center border border-slate-100 bg-slate-50"
+                        alt={`Design ${idx + 1}`}
+                        className="max-h-full max-w-full object-contain object-center"
                       />
-                    ))}
-                  </div>
-                )}
+                    </div>
+                  ))}
+                </div>
               </InfoCard>
             </>
-          )}
-
-          {/* Delivery notes */}
-          {data.deliveryNotes?.trim() && (
-            <>
-              <SectionLabel>Delivery notes</SectionLabel>
-              <SpecCard title="Notes">
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  {data.deliveryNotes}
-                </p>
-              </SpecCard>
-            </>
+          ) : (
+            <div className="min-h-0" aria-hidden />
           )}
         </div>
+
+        {/* Delivery — full width */}
+        {data.deliveryNotes?.trim() ? (
+          <div className="col-span-full space-y-3">
+            <SectionLabel>Delivery notes</SectionLabel>
+            <SpecCard title="Notes">
+              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border border-slate-100">
+                {data.deliveryNotes}
+              </p>
+            </SpecCard>
+          </div>
+        ) : null}
       </div>
 
       {/* ── Confirmation bar (only when embedded in a flow that supplies actions) ── */}
@@ -451,10 +449,20 @@ function Field({ label, value }: { label: string; value: string }) {
   )
 }
 
-function SpecCard({ title, children }: { title: string; children: ReactNode }) {
+function SpecCard({
+  title,
+  children,
+  className = '',
+}: {
+  title: string
+  children: ReactNode
+  className?: string
+}) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-      <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2.5">
+    <div
+      className={`flex min-h-0 flex-col rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm ${className}`}
+    >
+      <div className="mb-3 flex shrink-0 items-center justify-between border-b border-slate-100 pb-2.5">
         <h3 className="text-sm font-semibold text-[#042C53]">{title}</h3>
         <div className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#185FA5]">
           <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#B5D4F4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -462,7 +470,7 @@ function SpecCard({ title, children }: { title: string; children: ReactNode }) {
           </svg>
         </div>
       </div>
-      <div className="space-y-0">{children}</div>
+      <div className="min-h-0 flex-1 space-y-0">{children}</div>
     </div>
   )
 }

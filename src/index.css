@@ -166,7 +166,7 @@ body {
     display: grid !important;
     grid-template-columns: minmax(14rem, 32%) 1fr !important;
     gap: 1rem !important;
-    align-items: start !important;
+    align-items: stretch !important;
   }
 
   .print-document * {
