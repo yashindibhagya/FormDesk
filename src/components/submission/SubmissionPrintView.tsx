@@ -99,11 +99,12 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
     return () => ro.disconnect()
   }, [data.sewYes, sewingLayout.aspectRatio, sewingLayout.maxWidthPx, data.sizeWidth, data.sizeHeight])
 
-  const sewInsetTopPct = data.sewCornerTopText?.trim() ? 20 : 5
-  const sewInsetBottomPct = data.sewCornerBottomText?.trim() ? 20 : 5
+  const sewEdgeBandPct = 14
+  const sewInsetTopPct = data.sewCornerTopText?.trim() ? sewEdgeBandPct : 5
+  const sewInsetBottomPct = data.sewCornerBottomText?.trim() ? sewEdgeBandPct : 5
   const sewDiagramInsetStyle = {
-    left: '14%',
-    right: '14%',
+    left: `${sewEdgeBandPct}%`,
+    right: `${sewEdgeBandPct}%`,
     top: `${sewInsetTopPct}%`,
     bottom: `${sewInsetBottomPct}%`,
   } as const
@@ -270,12 +271,12 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                       maxWidth: sewingLayout.maxWidthPx ? `${sewingLayout.maxWidthPx}px` : undefined,
                     }}
                   >
-                    {/* Inner fabric: top/bottom inset only reserves 20% when that corner label exists */}
+                    {/* Inner fabric: edge insets reserve the same band thickness for top/bottom and left/right labels */}
                     <div
-                      className="absolute flex min-h-0 flex-col overflow-hidden border border-slate-300 bg-white"
+                      className="absolute flex min-h-0 flex-col overflow-hidden border border-slate-300 bg-slate-300"
                       style={sewDiagramInsetStyle}
                     >
-                      <div className="flex w-full min-w-0 shrink-0 items-center gap-1.5 bg-slate-100 px-1.5 py-1">
+                      <div className="flex w-full min-w-0 shrink-0 items-center gap-1.5 px-1.5 py-1">
                         <div className="flex min-h-px min-w-10 flex-1 basis-0 items-center sm:min-w-16">
                           <span className="h-px w-full bg-slate-600" />
                         </div>
@@ -293,7 +294,7 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                         </div>
                       </div>
                       <div ref={fabricBodyRowRef} className="flex min-h-0 min-w-0 flex-1 flex-row">
-                        <div className="flex h-full w-10 shrink-0 items-center justify-center overflow-visible bg-slate-100">
+                        <div className="flex h-full w-10 shrink-0 items-center justify-center overflow-visible">
                           <div
                             className="flex origin-center -rotate-90 flex-row items-center gap-1 whitespace-nowrap"
                             style={{
@@ -321,7 +322,10 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
 
                     {/* Top */}
                     {data.sewCornerTopText?.trim() ? (
-                      <div className="absolute left-[14%] right-[14%] top-0 h-[20%] flex items-stretch justify-center gap-2 border border-slate-400 bg-white px-2 py-2 text-slate-600">
+                      <div
+                        className="absolute top-0 flex items-stretch justify-center gap-2 border border-slate-400 bg-white px-2 py-2 text-slate-600"
+                        style={{ left: `${sewEdgeBandPct}%`, right: `${sewEdgeBandPct}%`, height: `${sewEdgeBandPct}%` }}
+                      >
                         <span className="w-px shrink-0 self-stretch bg-slate-300" />
                         <span className="flex items-center text-xs font-medium leading-none">{data.sewCornerTopText}</span>
                         <span className="w-px shrink-0 self-stretch bg-slate-300" />
@@ -331,8 +335,8 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                     {/* Left */}
                     {data.sewCornerLeftText?.trim() ? (
                       <div
-                        className="absolute left-0 w-[14%] flex flex-col items-center justify-center gap-1.5 border border-slate-400 bg-white px-1 py-2 text-slate-600"
-                        style={sewSideStripStyle}
+                        className="absolute left-0 flex flex-col items-center justify-center gap-1.5 border border-slate-400 bg-white px-1 py-2 text-slate-600"
+                        style={{ ...sewSideStripStyle, width: `${sewEdgeBandPct}%` }}
                       >
                         <span className="h-px w-full max-w-[90%] bg-slate-300" />
                         <span className="text-xs font-medium leading-none">{data.sewCornerLeftText}</span>
@@ -343,8 +347,8 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                     {/* Right */}
                     {data.sewCornerRightText?.trim() ? (
                       <div
-                        className="absolute right-0 w-[14%] flex flex-col items-center justify-center gap-1.5 border border-slate-400 bg-white px-1 py-2 text-slate-600"
-                        style={sewSideStripStyle}
+                        className="absolute right-0 flex flex-col items-center justify-center gap-1.5 border border-slate-400 bg-white px-1 py-2 text-slate-600"
+                        style={{ ...sewSideStripStyle, width: `${sewEdgeBandPct}%` }}
                       >
                         <span className="h-px w-full max-w-[90%] bg-slate-300" />
                         <span className="text-xs font-medium leading-none">{data.sewCornerRightText}</span>
@@ -354,7 +358,10 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
 
                     {/* Bottom */}
                     {data.sewCornerBottomText?.trim() ? (
-                      <div className="absolute left-[14%] right-[14%] bottom-0 h-[20%] flex items-stretch justify-center gap-2 border border-slate-400 bg-white px-2 py-2 text-slate-600">
+                      <div
+                        className="absolute bottom-0 flex items-stretch justify-center gap-2 border border-slate-400 bg-white px-2 py-2 text-slate-600"
+                        style={{ left: `${sewEdgeBandPct}%`, right: `${sewEdgeBandPct}%`, height: `${sewEdgeBandPct}%` }}
+                      >
                         <span className="w-px shrink-0 self-stretch bg-slate-300" />
                         <span className="flex items-center text-xs font-medium leading-none">{data.sewCornerBottomText}</span>
                         <span className="w-px shrink-0 self-stretch bg-slate-300" />

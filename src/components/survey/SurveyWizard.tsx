@@ -496,7 +496,7 @@ export function SurveyWizard({
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') {
                           event.preventDefault()
-                          ;(event.currentTarget as HTMLInputElement).blur()
+                            ; (event.currentTarget as HTMLInputElement).blur()
                         }
                       }}
                     />
@@ -537,7 +537,7 @@ export function SurveyWizard({
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') {
                           event.preventDefault()
-                          ;(event.currentTarget as HTMLInputElement).blur()
+                            ; (event.currentTarget as HTMLInputElement).blur()
                         }
                       }}
                     />
@@ -578,7 +578,7 @@ export function SurveyWizard({
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') {
                           event.preventDefault()
-                          ;(event.currentTarget as HTMLInputElement).blur()
+                            ; (event.currentTarget as HTMLInputElement).blur()
                         }
                       }}
                     />
@@ -619,7 +619,7 @@ export function SurveyWizard({
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') {
                           event.preventDefault()
-                          ;(event.currentTarget as HTMLInputElement).blur()
+                            ; (event.currentTarget as HTMLInputElement).blur()
                         }
                       }}
                     />
@@ -757,9 +757,8 @@ function UploadSlot({
         <button
           type="button"
           onClick={handleRemoveClick}
-          className={`absolute z-10 flex items-center justify-center rounded-full bg-slate-900/80 text-white shadow-sm hover:bg-slate-900 ${
-            compact ? 'right-1 top-1 h-6 w-6' : 'right-1.5 top-1.5 h-8 w-8'
-          }`}
+          className={`absolute z-10 flex items-center justify-center rounded-full bg-slate-900/80 text-white shadow-sm hover:bg-slate-900 ${compact ? 'right-1 top-1 h-6 w-6' : 'right-1.5 top-1.5 h-8 w-8'
+            }`}
           aria-label={`Remove ${label}`}
         >
           <svg
