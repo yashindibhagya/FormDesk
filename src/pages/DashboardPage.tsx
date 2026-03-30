@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { Input } from '../components/ui/Input'
-import { Select } from '../components/ui/Select'
 import { firebaseDb } from '../lib/firebase'
 import { getCurrentFinancialYearLabel, isWithinLastNDays } from '../lib/financialYear'
 import {
@@ -12,10 +10,8 @@ import {
   formatQuantityDisplay,
 } from '../lib/monthlyOrderSummary'
 import { useInvoicesStore } from '../store/useInvoicesStore'
-import { formatDateTimeDotDMY } from '../lib/dateDisplay'
 import { useSubmissionsStore } from '../store/useSubmissionsStore'
 
-const PRINT_TYPE_OPTIONS = ['All', 'Banner', 'Flag']
 const TIME_FILTER_OPTIONS = ['all', 'last7days', 'previousFy'] as const
 
 function classifyPrintType(raw: string): 'banner' | 'flag' | 'other' {
@@ -28,26 +24,18 @@ function classifyPrintType(raw: string): 'banner' | 'flag' | 'other' {
 export function DashboardPage() {
   const [searchParams] = useSearchParams()
   const submissions = useSubmissionsStore((s) => s.submissions)
-  const deleteSubmission = useSubmissionsStore((s) => s.deleteSubmission)
   const firestoreReady = useSubmissionsStore((s) => s.firestoreReady)
   const firestoreError = useSubmissionsStore((s) => s.firestoreError)
   const invoices = useInvoicesStore((s) => s.invoices)
   const invoicesReady = useInvoicesStore((s) => s.firestoreReady)
   const invoicesError = useInvoicesStore((s) => s.firestoreError)
-  const [query, setQuery] = useState('')
-  const [printType, setPrintType] = useState('All')
+  const [query] = useState('')
+  const [printType] = useState('All')
   const [timeFilter, setTimeFilter] = useState('all')
   const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null)
   const [hoveredChartPointKey, setHoveredChartPointKey] = useState<string | null>(null)
   const currentFinancialYear = useMemo(() => getCurrentFinancialYearLabel(), [])
   const ordersOnly = searchParams.get('ordersOnly') === '1'
-  const financialYearOptions = useMemo(() => {
-    const years = new Set<string>()
-    for (const s of submissions) {
-      if (s.financialYear?.trim()) years.add(s.financialYear)
-    }
-    return Array.from(years).sort((a, b) => b.localeCompare(a))
-  }, [submissions])
 
   const monthlySummaries = useMemo(
     () => buildMonthlyOrderSummaries(submissions, invoices),
@@ -326,52 +314,6 @@ export function DashboardPage() {
           </div>
         </Card>
       ) : null}
-
-      {/* <Card padding="sm" className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="sm:col-span-2 lg:col-span-2">
-            <label htmlFor="search" className="mb-1 block text-xs font-medium text-slate-500">
-              Search
-            </label>
-            <Input
-              id="search"
-              placeholder="Order name, Job No, Owner, Fabric"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-          <div>
-            <label htmlFor="filter-print" className="mb-1 block text-xs font-medium text-slate-500">
-              Print type
-            </label>
-            <Select id="filter-print" value={printType} onChange={(e) => setPrintType(e.target.value)}>
-              {PRINT_TYPE_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div>
-            <label htmlFor="filter-time" className="mb-1 block text-xs font-medium text-slate-500">
-              Time range
-            </label>
-            <Select id="filter-time" value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)}>
-              <option value="all">All records</option>
-              <option value="last7days">Last 7 days</option>
-              <option value="previousFy">Previous financial years</option>
-              <option value={`fy:${currentFinancialYear}`}>Current financial year ({currentFinancialYear})</option>
-              {financialYearOptions
-                .filter((year) => year !== currentFinancialYear)
-                .map((year) => (
-                  <option key={year} value={`fy:${year}`}>
-                    Previous FY ({year})
-                  </option>
-                ))}
-            </Select>
-          </div>
-        </div>
-      </Card> */}
 
       {filtered.length === 0 && submissions.length === 0 ? (
         <Card className="text-center">
