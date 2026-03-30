@@ -15,6 +15,43 @@ import type { Submission, SurveyFormData } from '../types/survey'
 import { EMPTY_SURVEY } from '../types/survey'
 
 const COLL = 'submissions'
+const ACTIVE_SURVEY_FIELDS = [
+  'orderDate',
+  'deliveredBy',
+  'designImage',
+  'designThumb1',
+  'designThumb2',
+  'designThumb3',
+  'jobNo',
+  'orderName',
+  'ownerName',
+  'nic',
+  'address',
+  'fabric',
+  'fabricCustom',
+  'quantity',
+  'quantityNormal',
+  'quantityLeft',
+  'quantityRight',
+  'sizeHeight',
+  'sizeWidth',
+  'method',
+  'printDescription',
+  'printType',
+  'sewYes',
+  'sewNo',
+  'sewCornerTopText',
+  'sewCornerLeftText',
+  'sewCornerRightText',
+  'sewCornerBottomText',
+  'deliveryNotes',
+] as const satisfies ReadonlyArray<keyof SurveyFormData>
+
+function toPersistedSurveyData(data: SurveyFormData): Partial<SurveyFormData> {
+  return Object.fromEntries(
+    ACTIVE_SURVEY_FIELDS.map((key) => [key, data[key]] as const),
+  ) as Partial<SurveyFormData>
+}
 
 function normalizeSubmission(id: string, raw: Record<string, unknown> | undefined): Submission | null {
   if (!raw) return null
@@ -48,12 +85,13 @@ export async function saveSubmissionToFirestore(sub: Submission): Promise<void> 
   const createdAtMs = Date.parse(sub.createdAt)
   const createdAt = Number.isNaN(createdAtMs) ? Timestamp.now() : Timestamp.fromDate(new Date(createdAtMs))
   const financialYear = sub.financialYear?.trim() || getFinancialYearLabel(createdAt.toDate())
+  const persistedData = toPersistedSurveyData(sub.data)
   await setDoc(
     doc(firebaseDb, COLL, sub.id),
     {
       createdAt,
       financialYear,
-      data: sub.data,
+      data: persistedData,
     },
     { merge: true },
   )
