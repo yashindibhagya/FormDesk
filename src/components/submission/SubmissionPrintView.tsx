@@ -357,7 +357,7 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                         return (
                           <span
                             key={`left-marker-${idx}`}
-                            className={`absolute left-0 -translate-x-[88%] pr-0.5 text-base font-extrabold leading-none text-slate-700 ${markerPlacement.className}`}
+                            className={`absolute left-0 -translate-x-[88%] pr-0.5 text-[22px] font-extrabold leading-none text-slate-700 ${markerPlacement.className}`}
                             style={{ top: markerPlacement.top }}
                             aria-hidden
                           >
@@ -370,7 +370,7 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                         return (
                           <span
                             key={`right-marker-${idx}`}
-                            className={`absolute right-0 translate-x-[88%] pl-0.5 text-base font-extrabold leading-none text-slate-700 ${markerPlacement.className}`}
+                            className={`absolute right-0 translate-x-[88%] pl-0.5 text-[22px] font-extrabold leading-none text-slate-700 ${markerPlacement.className}`}
                             style={{ top: markerPlacement.top }}
                             aria-hidden
                           >
