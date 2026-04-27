@@ -45,6 +45,8 @@ const ACTIVE_SURVEY_FIELDS = [
   'sewYes',
   'sewNo',
   'sewCornerTopText',
+  'sewCornerTopLeftText',
+  'sewCornerTopRightText',
   'sewCornerLeftText',
   'sewCornerRightText',
   'sewCornerBottomText',

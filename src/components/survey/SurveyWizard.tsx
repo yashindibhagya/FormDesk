@@ -77,6 +77,24 @@ function sewCornerPocketDisplay(raw: string | undefined): string {
   return `${t} pocket`
 }
 
+const MAX_SEW_SIDE_MARKERS = 30
+
+function parseMarkerCount(raw: string | undefined): number {
+  const n = Number.parseInt((raw ?? '').trim(), 10)
+  if (!Number.isFinite(n) || n <= 0) return 0
+  return Math.min(n, MAX_SEW_SIDE_MARKERS)
+}
+
+function sanitizeMarkerCountInput(raw: string): string {
+  return raw.replace(/\D+/g, '').slice(0, 2)
+}
+
+function markerPositions(count: number): number[] {
+  if (count <= 0) return []
+  if (count === 1) return [0]
+  return Array.from({ length: count }, (_, idx) => (idx / (count - 1)) * 100)
+}
+
 function buildInitialValues(values?: SurveyFormData): SurveyFormData {
   const base = { ...EMPTY_SURVEY, ...(values ?? {}) }
   const isPreset = FABRIC_OPTIONS.some(
@@ -155,6 +173,14 @@ export function SurveyWizard({
   const sewingLayout = useMemo(
     () => getSewingLayout(values.sizeWidth ?? '', values.sizeHeight ?? ''),
     [values.sizeWidth, values.sizeHeight],
+  )
+  const leftMarkerPositions = useMemo(
+    () => markerPositions(parseMarkerCount(values.sewCornerTopLeftText)),
+    [values.sewCornerTopLeftText],
+  )
+  const rightMarkerPositions = useMemo(
+    () => markerPositions(parseMarkerCount(values.sewCornerTopRightText)),
+    [values.sewCornerTopRightText],
   )
 
   useLayoutEffect(() => {
@@ -533,6 +559,28 @@ export function SurveyWizard({
                       <div className="min-h-0 min-w-0 flex-1 bg-slate-300" aria-hidden />
                     </div>
                   </div>
+                  <div className="pointer-events-none absolute left-14 right-14 top-10 bottom-10 z-20">
+                    {leftMarkerPositions.map((top, idx) => (
+                      <span
+                        key={`left-marker-${idx}`}
+                        className="absolute left-0 -translate-x-full -translate-y-1/2 pr-1 text-sm font-bold leading-none text-slate-700"
+                        style={{ top: `${top}%` }}
+                        aria-hidden
+                      >
+                        {'>'}
+                      </span>
+                    ))}
+                    {rightMarkerPositions.map((top, idx) => (
+                      <span
+                        key={`right-marker-${idx}`}
+                        className="absolute right-0 translate-x-full -translate-y-1/2 pl-1 text-sm font-bold leading-none text-slate-700"
+                        style={{ top: `${top}%` }}
+                        aria-hidden
+                      >
+                        {'<'}
+                      </span>
+                    ))}
+                  </div>
 
                   {isEditingTopSize || !values.sewCornerTopText ? (
                     <input
@@ -574,6 +622,62 @@ export function SurveyWizard({
                       <span className="w-px shrink-0 self-stretch bg-slate-600" />
                     </button>
                   )}
+
+                  <input
+                    type="text"
+                    className="absolute left-14 top-10 h-8 w-16 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-slate-400 bg-white px-2 py-1 text-center text-xs text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="0"
+                    value={values.sewCornerTopLeftText ?? ''}
+                    onChange={(event) =>
+                      setValue('sewCornerTopLeftText', sanitizeMarkerCountInput(event.target.value), {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                      })
+                    }
+                    onBlur={(event) => {
+                      const normalized = parseMarkerCount(event.currentTarget.value)
+                      setValue('sewCornerTopLeftText', normalized > 0 ? String(normalized) : '', {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                      })
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                          ; (event.currentTarget as HTMLInputElement).blur()
+                      }
+                    }}
+                  />
+
+                  <input
+                    type="text"
+                    className="absolute right-14 top-10 h-8 w-16 translate-x-1/2 -translate-y-1/2 rounded-sm border border-slate-400 bg-white px-2 py-1 text-center text-xs text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="0"
+                    value={values.sewCornerTopRightText ?? ''}
+                    onChange={(event) =>
+                      setValue('sewCornerTopRightText', sanitizeMarkerCountInput(event.target.value), {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                      })
+                    }
+                    onBlur={(event) => {
+                      const normalized = parseMarkerCount(event.currentTarget.value)
+                      setValue('sewCornerTopRightText', normalized > 0 ? String(normalized) : '', {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                      })
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                          ; (event.currentTarget as HTMLInputElement).blur()
+                      }
+                    }}
+                  />
 
                   {isEditingLeftSize || !values.sewCornerLeftText ? (
                     <input

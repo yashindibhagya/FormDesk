@@ -55,6 +55,8 @@ export type SurveyFormData = {
   sewCornerRight: boolean
   sewCornerBottom: boolean
   sewCornerTopText: string
+  sewCornerTopLeftText: string
+  sewCornerTopRightText: string
   sewCornerLeftText: string
   sewCornerRightText: string
   sewCornerBottomText: string
@@ -131,6 +133,8 @@ export const EMPTY_SURVEY: SurveyFormData = {
   sewCornerRight: false,
   sewCornerBottom: false,
   sewCornerTopText: '',
+  sewCornerTopLeftText: '',
+  sewCornerTopRightText: '',
   sewCornerLeftText: '',
   sewCornerRightText: '',
   sewCornerBottomText: '',

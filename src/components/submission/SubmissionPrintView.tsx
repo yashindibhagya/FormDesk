@@ -40,6 +40,20 @@ function sewCornerPocketDisplay(raw: string | undefined): string {
   return `${t} (pocket)`
 }
 
+const MAX_SEW_SIDE_MARKERS = 30
+
+function parseMarkerCount(raw: string | undefined): number {
+  const n = Number.parseInt((raw ?? '').trim(), 10)
+  if (!Number.isFinite(n) || n <= 0) return 0
+  return Math.min(n, MAX_SEW_SIDE_MARKERS)
+}
+
+function markerPositions(count: number): number[] {
+  if (count <= 0) return []
+  if (count === 1) return [0]
+  return Array.from({ length: count }, (_, idx) => (idx / (count - 1)) * 100)
+}
+
 export type SubmissionPrintDocumentShellProps = {
   submission: Submission
   /** For screenshot PDF / copy-image capture on the submission detail page */
@@ -85,6 +99,8 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
   const { data } = submission
   const created = formatDateTimeDotDMY(submission.createdAt)
   const sewingLayout = getSewingLayout(data.sizeWidth || '', data.sizeHeight || '')
+  const leftMarkerPositions = markerPositions(parseMarkerCount(data.sewCornerTopLeftText))
+  const rightMarkerPositions = markerPositions(parseMarkerCount(data.sewCornerTopRightText))
   const designPreviewItems = [
     { src: data.designImage, qty: data.designImageQty },
     { src: data.designThumb1, qty: data.designThumb1Qty },
@@ -141,7 +157,7 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
     sewingLayout.maxWidthPx,
   ])
 
-  const sewEdgeBandPct = 14
+  const sewEdgeBandPct = 12
   const sewInsetTopPct = data.sewCornerTopText?.trim() ? sewEdgeBandPct : 5
   const sewInsetBottomPct = data.sewCornerBottomText?.trim() ? sewEdgeBandPct : 5
   const sewDiagramInsetStyle = {
@@ -276,7 +292,7 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                 </div>
                 <div className="flex flex-1 flex-col rounded-lg bg-slate-50 px-2 py-1.5 print:px-1.5 print:py-1">
                   <div
-                    className="relative mx-auto w-full max-w-[210px] print:max-w-[210px]"
+                    className="relative mx-auto w-full max-w-[240px] print:max-w-[240px]"
                     style={{
                       aspectRatio: sewingLayout.aspectRatio,
                       maxWidth: sewingLayout.maxWidthPx ? `${sewingLayout.maxWidthPx}px` : undefined,
@@ -328,6 +344,28 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                         </div>
                         <div className="min-h-0 min-w-0 flex-1 bg-slate-300" aria-hidden />
                       </div>
+                    </div>
+                    <div className="pointer-events-none absolute z-20" style={sewDiagramInsetStyle}>
+                      {leftMarkerPositions.map((top, idx) => (
+                        <span
+                          key={`left-marker-${idx}`}
+                          className="absolute left-0 -translate-x-full -translate-y-1/2 pr-1.5 text-base font-extrabold leading-none text-slate-700"
+                          style={{ top: `${top}%` }}
+                          aria-hidden
+                        >
+                          {'>'}
+                        </span>
+                      ))}
+                      {rightMarkerPositions.map((top, idx) => (
+                        <span
+                          key={`right-marker-${idx}`}
+                          className="absolute right-0 translate-x-full -translate-y-1/2 pl-1.5 text-base font-extrabold leading-none text-slate-700"
+                          style={{ top: `${top}%` }}
+                          aria-hidden
+                        >
+                          {'<'}
+                        </span>
+                      ))}
                     </div>
 
                     {data.sewCornerTopText?.trim() ? (

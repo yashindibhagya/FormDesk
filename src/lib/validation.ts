@@ -60,6 +60,8 @@ export const surveySchema = z
     sewCornerRight: z.boolean(),
     sewCornerBottom: z.boolean(),
     sewCornerTopText: z.string().trim(),
+    sewCornerTopLeftText: z.string().trim(),
+    sewCornerTopRightText: z.string().trim(),
     sewCornerLeftText: z.string().trim(),
     sewCornerRightText: z.string().trim(),
     sewCornerBottomText: z.string().trim(),

@@ -251,6 +251,8 @@ export function submissionToPlainText(sub: Submission): string {
     `Sewing Yes: ${boolLabel(data.sewYes)}`,
     `Sewing No: ${boolLabel(data.sewNo)}`,
     `Sew Top: ${boolLabel(data.sewCornerTop)} ${data.sewCornerTopText || ''}`.trim(),
+    `Sew Top Left: ${data.sewCornerTopLeftText || '-'}`.trim(),
+    `Sew Top Right: ${data.sewCornerTopRightText || '-'}`.trim(),
     `Sew Left: ${boolLabel(data.sewCornerLeft)} ${data.sewCornerLeftText || ''}`.trim(),
     `Sew Right: ${boolLabel(data.sewCornerRight)} ${data.sewCornerRightText || ''}`.trim(),
     `Sew Bottom: ${boolLabel(data.sewCornerBottom)} ${data.sewCornerBottomText || ''}`.trim(),
