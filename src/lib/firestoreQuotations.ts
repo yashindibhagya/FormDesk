@@ -35,6 +35,19 @@ function normalizeLineItems(raw: unknown): QuotationLineItem[] {
   return ensureLineItems(rows)
 }
 
+function normalizeSecondaryLineItems(raw: unknown): QuotationLineItem[] {
+  if (!Array.isArray(raw)) return []
+  const rows = raw
+    .filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === 'object')
+    .map((row) => ({
+      id: typeof row.id === 'string' && row.id ? row.id : crypto.randomUUID(),
+      description: String(row.description ?? ''),
+      qty: String(row.qty ?? ''),
+      unitPrice: String(row.unitPrice ?? ''),
+    }))
+  return rows
+}
+
 function normalizeQuotation(id: string, raw: Record<string, unknown> | undefined): QuotationRecord | null {
   if (!raw) return null
   const createdAtRaw = raw.createdAt
@@ -78,6 +91,7 @@ function normalizeQuotation(id: string, raw: Record<string, unknown> | undefined
     ...EMPTY_QUOTATION_FORM,
     ...partial,
     lineItems: normalizeLineItems(partial.lineItems),
+    lineItemsSecondary: normalizeSecondaryLineItems(partial.lineItemsSecondary),
   }
 
   return {
@@ -102,6 +116,7 @@ export async function saveQuotationToFirestore(record: QuotationRecord): Promise
     customerAddress: record.data.customerAddress,
     subject: record.data.subject,
     lineItems: ensureLineItems(record.data.lineItems),
+    lineItemsSecondary: record.data.lineItemsSecondary ?? [],
   }
   await setDoc(
     doc(firebaseDb, COLL, record.id),

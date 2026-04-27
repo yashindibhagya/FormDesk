@@ -56,6 +56,7 @@ export function QuotationPage() {
   const [subject, setSubject] = useState('')
   const [introText, setIntroText] = useState(DEFAULT_INTRO)
   const [lineItems, setLineItems] = useState<QuotationLineItem[]>(() => [createEmptyLineItem()])
+  const [lineItemsSecondary, setLineItemsSecondary] = useState<QuotationLineItem[]>([])
   const [paymentNote, setPaymentNote] = useState(DEFAULT_PAYMENT)
   const [closingNote, setClosingNote] = useState(DEFAULT_CLOSING)
   const [signatoryLine, setSignatoryLine] = useState('MAW PRINTING')
@@ -86,6 +87,7 @@ export function QuotationPage() {
     setSubject('')
     setIntroText(DEFAULT_INTRO)
     setLineItems([createEmptyLineItem()])
+    setLineItemsSecondary([])
     setPaymentNote(DEFAULT_PAYMENT)
     setClosingNote(DEFAULT_CLOSING)
     setSignatoryLine('MAW PRINTING')
@@ -99,6 +101,7 @@ export function QuotationPage() {
     setSubject(d.subject ?? '')
     setIntroText(d.introText?.trim() ? d.introText : DEFAULT_INTRO)
     setLineItems(d.lineItems?.length ? d.lineItems : [createEmptyLineItem()])
+    setLineItemsSecondary(d.lineItemsSecondary?.length ? d.lineItemsSecondary : [])
     setPaymentNote(d.paymentNote?.trim() ? d.paymentNote : DEFAULT_PAYMENT)
     setClosingNote(d.closingNote?.trim() ? d.closingNote : DEFAULT_CLOSING)
     setSignatoryLine(d.signatoryLine?.trim() ? d.signatoryLine : 'MAW PRINTING')
@@ -111,6 +114,7 @@ export function QuotationPage() {
     const subj = [data.printType, data.orderName].filter(Boolean).join(' – ')
     setSubject(subj ? subj.toUpperCase() : 'ITEMS')
     setLineItems(buildLineItemsFromSubmission(data))
+    setLineItemsSecondary([])
   }, [])
 
   useEffect(() => {
@@ -162,6 +166,26 @@ export function QuotationPage() {
     setLineItems((rows) => rows.map((r) => (r.id === id ? { ...r, ...patch } : r)))
   }, [])
 
+  const addSecondaryRow = useCallback(() => {
+    setLineItemsSecondary((rows) => [...rows, createEmptyLineItem()])
+  }, [])
+
+  const removeSecondaryRow = useCallback((id: string) => {
+    setLineItemsSecondary((rows) => rows.filter((r) => r.id !== id))
+  }, [])
+
+  const updateSecondaryLine = useCallback((id: string, patch: Partial<Omit<QuotationLineItem, 'id'>>) => {
+    setLineItemsSecondary((rows) => rows.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+  }, [])
+
+  const enableSecondQuotation = useCallback(() => {
+    setLineItemsSecondary((rows) => (rows.length ? rows : [createEmptyLineItem()]))
+  }, [])
+
+  const disableSecondQuotation = useCallback(() => {
+    setLineItemsSecondary([])
+  }, [])
+
   const handlePrint = useCallback(() => {
     printOrderDocument()
   }, [])
@@ -180,6 +204,7 @@ export function QuotationPage() {
       subject,
       introText,
       lineItems,
+      lineItemsSecondary,
       paymentNote,
       closingNote,
       signatoryLine,
@@ -191,6 +216,7 @@ export function QuotationPage() {
     subject,
     introText,
     lineItems,
+    lineItemsSecondary,
     paymentNote,
     closingNote,
     signatoryLine,
@@ -406,6 +432,65 @@ export function QuotationPage() {
           </div>
         </div>
 
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-slate-700">Second quotation (separate total)</p>
+            {lineItemsSecondary.length > 0 ? (
+              <div className="flex gap-2">
+                <Button type="button" variant="secondary" onClick={addSecondaryRow}>
+                  Add row
+                </Button>
+                <Button type="button" variant="secondary" onClick={disableSecondQuotation}>
+                  Remove section
+                </Button>
+              </div>
+            ) : (
+              <Button type="button" variant="secondary" onClick={enableSecondQuotation}>
+                Add second quotation
+              </Button>
+            )}
+          </div>
+
+          {lineItemsSecondary.length > 0 ? (
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              {lineItemsSecondary.map((row, index) => (
+                <div
+                  key={row.id}
+                  className="grid gap-2 rounded-md border border-slate-200 bg-white p-3 md:grid-cols-[1fr_5rem_7rem_auto] md:items-end"
+                >
+                  <FormField label={`Description ${index + 1}`} htmlFor={`d2-${row.id}`}>
+                    <Textarea
+                      id={`d2-${row.id}`}
+                      rows={2}
+                      value={row.description}
+                      onChange={(e) => updateSecondaryLine(row.id, { description: e.target.value })}
+                    />
+                  </FormField>
+                  <FormField label="Qty" htmlFor={`q2-${row.id}`}>
+                    <Input
+                      id={`q2-${row.id}`}
+                      value={row.qty}
+                      onChange={(e) => updateSecondaryLine(row.id, { qty: e.target.value })}
+                    />
+                  </FormField>
+                  <FormField label="Unit price" htmlFor={`u2-${row.id}`}>
+                    <Input
+                      id={`u2-${row.id}`}
+                      value={row.unitPrice}
+                      onChange={(e) => updateSecondaryLine(row.id, { unitPrice: e.target.value })}
+                    />
+                  </FormField>
+                  <div className="flex justify-end md:pb-2">
+                    <Button type="button" variant="secondary" onClick={() => removeSecondaryRow(row.id)}>
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
         <FormField label="Payment terms" htmlFor="q-pay">
           <Textarea id="q-pay" rows={2} value={paymentNote} onChange={(e) => setPaymentNote(e.target.value)} />
         </FormField>
@@ -436,6 +521,7 @@ export function QuotationPage() {
           subject={subject}
           introText={introText}
           lineItems={lineItems}
+          lineItemsSecondary={lineItemsSecondary}
           paymentNote={paymentNote}
           closingNote={closingNote}
           signatoryLine={signatoryLine}

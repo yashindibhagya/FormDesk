@@ -10,6 +10,7 @@ export type QuotationDraft = {
   customerAddress: string
   subject: string
   lineItems: QuotationLineItem[]
+  lineItemsSecondary: QuotationLineItem[]
   paymentNote: string
   closingNote: string
   signatoryLine: string
@@ -26,6 +27,7 @@ export const EMPTY_QUOTATION_FORM: QuotationFormData = {
   subject: '',
   introText: '',
   lineItems: [],
+  lineItemsSecondary: [],
   paymentNote: '',
   closingNote: '',
   signatoryLine: '',

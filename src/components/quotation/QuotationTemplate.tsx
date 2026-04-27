@@ -9,6 +9,7 @@ type Props = {
   subject: string
   introText: string
   lineItems: QuotationLineItem[]
+  lineItemsSecondary?: QuotationLineItem[]
   paymentNote: string
   closingNote: string
   signatoryLine: string
@@ -22,16 +23,25 @@ export function QuotationTemplate({
   subject,
   introText,
   lineItems,
+  lineItemsSecondary = [],
   paymentNote,
   closingNote,
   signatoryLine,
   signatoryName,
 }: Props) {
   const total = sumLineAmounts(lineItems)
+  const totalSecondary = sumLineAmounts(lineItemsSecondary)
   const totalFormatted =
     total > 0
       ? total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       : '—'
+  const totalSecondaryFormatted =
+    totalSecondary > 0
+      ? totalSecondary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : '—'
+  const hasSecondaryRows = lineItemsSecondary.some(
+    (row) => row.description.trim() || row.qty.trim() || row.unitPrice.trim(),
+  )
 
   return (
     <article
@@ -65,7 +75,7 @@ export function QuotationTemplate({
         </h2>
 
         <p className="mb-6 text-justify">{introText}</p>
-
+        <p className="mb-2 text-[12px] font-semibold uppercase">Quotation 01</p>
         <table className="mb-4 w-full border-collapse border border-black text-left text-[12px]">
           <thead>
             <tr className="bg-slate-50">
@@ -97,6 +107,43 @@ export function QuotationTemplate({
             </tr>
           </tbody>
         </table>
+
+        {hasSecondaryRows ? (
+          <>
+            <p className="mb-2 text-[12px] font-semibold uppercase">Quotation 02</p>
+            <table className="mb-4 w-full border-collapse border border-black text-left text-[12px]">
+              <thead>
+                <tr className="bg-slate-50">
+                  <th className="border border-black px-2 py-1.5 font-semibold uppercase">Description</th>
+                  <th className="w-[10%] border border-black px-2 py-1.5 text-center font-semibold uppercase">Qty</th>
+                  <th className="w-[22%] border border-black px-2 py-1.5 text-right font-semibold uppercase">
+                    Unit price
+                  </th>
+                  <th className="w-[18%] border border-black px-2 py-1.5 text-right font-semibold uppercase">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lineItemsSecondary.map((row) => {
+                  const amount = formatLineAmount(row.qty, row.unitPrice)
+                  return (
+                    <tr key={row.id}>
+                      <td className="border border-black px-2 py-2 align-top whitespace-pre-wrap">{row.description}</td>
+                      <td className="border border-black px-2 py-2 text-center align-top tabular-nums">{row.qty}</td>
+                      <td className="border border-black px-2 py-2 text-right align-top tabular-nums">{row.unitPrice}</td>
+                      <td className="border border-black px-2 py-2 text-right align-top tabular-nums">{amount || '—'}</td>
+                    </tr>
+                  )
+                })}
+                <tr className="font-semibold">
+                  <td colSpan={3} className="border border-black px-2 py-2 text-right uppercase">
+                    Total
+                  </td>
+                  <td className="border border-black px-2 py-2 text-right tabular-nums">{totalSecondaryFormatted}</td>
+                </tr>
+              </tbody>
+            </table>
+          </>
+        ) : null}
 
         <p className="mb-4 text-justify text-[12px] font-semibold">{paymentNote}</p>
 
