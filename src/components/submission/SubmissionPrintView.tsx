@@ -54,6 +54,12 @@ function markerPositions(count: number): number[] {
   return Array.from({ length: count }, (_, idx) => (idx / (count - 1)) * 100)
 }
 
+function markerVerticalPlacement(top: number): { className: string; top: string } {
+  if (top <= 0) return { className: 'translate-y-0', top: '0%' }
+  if (top >= 100) return { className: '-translate-y-full', top: '100%' }
+  return { className: '-translate-y-1/2', top: `${top}%` }
+}
+
 export type SubmissionPrintDocumentShellProps = {
   submission: Submission
   /** For screenshot PDF / copy-image capture on the submission detail page */
@@ -346,26 +352,32 @@ export function SubmissionPrintView({ submission, onConfirm, onRequestChanges }:
                       </div>
                     </div>
                     <div className="pointer-events-none absolute z-20" style={sewDiagramInsetStyle}>
-                      {leftMarkerPositions.map((top, idx) => (
-                        <span
-                          key={`left-marker-${idx}`}
-                          className="absolute left-0 -translate-x-full -translate-y-1/2 pr-1.5 text-base font-extrabold leading-none text-slate-700"
-                          style={{ top: `${top}%` }}
-                          aria-hidden
-                        >
-                          {'>'}
-                        </span>
-                      ))}
-                      {rightMarkerPositions.map((top, idx) => (
-                        <span
-                          key={`right-marker-${idx}`}
-                          className="absolute right-0 translate-x-full -translate-y-1/2 pl-1.5 text-base font-extrabold leading-none text-slate-700"
-                          style={{ top: `${top}%` }}
-                          aria-hidden
-                        >
-                          {'<'}
-                        </span>
-                      ))}
+                      {leftMarkerPositions.map((top, idx) => {
+                        const markerPlacement = markerVerticalPlacement(top)
+                        return (
+                          <span
+                            key={`left-marker-${idx}`}
+                            className={`absolute left-0 -translate-x-[88%] pr-0.5 text-base font-extrabold leading-none text-slate-700 ${markerPlacement.className}`}
+                            style={{ top: markerPlacement.top }}
+                            aria-hidden
+                          >
+                            {'>'}
+                          </span>
+                        )
+                      })}
+                      {rightMarkerPositions.map((top, idx) => {
+                        const markerPlacement = markerVerticalPlacement(top)
+                        return (
+                          <span
+                            key={`right-marker-${idx}`}
+                            className={`absolute right-0 translate-x-[88%] pl-0.5 text-base font-extrabold leading-none text-slate-700 ${markerPlacement.className}`}
+                            style={{ top: markerPlacement.top }}
+                            aria-hidden
+                          >
+                            {'<'}
+                          </span>
+                        )
+                      })}
                     </div>
 
                     {data.sewCornerTopText?.trim() ? (
